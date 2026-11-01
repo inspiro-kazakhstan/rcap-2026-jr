@@ -52,13 +52,28 @@ try:
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
             for marker_id, marker_corners in zip(ids.flatten(), corners):
-                # Estimate marker pose
-                rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(
-                    marker_corners, MARKER_LENGTH, camera_matrix, dist_coeffs
+                half = MARKER_LENGTH / 2
+                object_points = np.array([
+                    [-half,  half, 0],
+                    [ half,  half, 0],
+                    [ half, -half, 0],
+                    [-half, -half, 0],
+                ], dtype=np.float32)
+
+                image_points = marker_corners.reshape(4, 2)
+
+                ok, rvec, tvec = cv2.solvePnP(
+                    object_points,
+                    image_points,
+                    camera_matrix,
+                    dist_coeffs,
+                    flags=cv2.SOLVEPNP_IPPE_SQUARE,
                 )
-                cv2.drawFrameAxes(
-                    frame, camera_matrix, dist_coeffs, rvec, tvec, 0.05
-                )
+
+                if not ok:
+                    continue
+
+                cv2.drawFrameAxes(frame, camera_matrix, dist_coeffs, rvec, tvec, 0.05)
 
                 # Calculate yaw
                 rotation_matrix, _ = cv2.Rodrigues(rvec[0][0])
