@@ -32,8 +32,11 @@ robots = {
     6: "Robot 6",
     7: "Robot 7",
     8: "Robot 8",
+    41: "Top Left",
+    42: "Top Right",
+    43: "Bottom Left",
+    44: "Bottom Right"
 }
-
 try:
     while True:
         ret, frame = camera.read()
