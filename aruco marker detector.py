@@ -72,10 +72,7 @@ try:
                 row = min(center_y * 10 // frame_height + 1, 10)
 
                 robot_name = robots.get(int(marker_id), "Unknown robot")
-                print(
-                    f"{robot_name}, позиция: {column}, {row}, "
-                    f"yaw: {camera_yaw:.1f}°"
-                )
+                print(robot_name, "позиция:", column, row, "угол:", camera_yaw)
 
         # Draw 10×10 grid
         for i in range(1, 10):
