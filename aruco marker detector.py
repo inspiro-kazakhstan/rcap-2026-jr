@@ -76,7 +76,7 @@ try:
                 cv2.drawFrameAxes(frame, camera_matrix, dist_coeffs, rvec, tvec, 0.05)
 
                 # Calculate yaw
-                rotation_matrix, _ = cv2.Rodrigues(rvec[0][0])
+                rotation_matrix, _ = cv2.Rodrigues(rvec)
                 yaw_degrees = np.degrees(
                     np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
                 )
