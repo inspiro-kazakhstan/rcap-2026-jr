@@ -10,14 +10,36 @@ if not camera.isOpened():
 frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-MARKER_LENGTH = 0.1  # Marker side length in meters
+MARKER_LENGTH = 0.1
 
 camera_matrix = np.array([
     [800, 0, frame_width / 2],
     [0, 800, frame_height / 2],
     [0, 0, 1]
 ], dtype=np.float32)
+
 dist_coeffs = np.zeros((5, 1), dtype=np.float32)
+
+WARP_WIDTH = 800
+WARP_HEIGHT = 800
+
+source_points = np.float32([
+    [120, 80],   # top-left
+    [540, 110],  # top-right
+    [610, 420],  # bottom-right
+    [70, 390],   # bottom-left
+])
+
+destination_points = np.float32([
+    [0, 0],
+    [WARP_WIDTH - 1, 0],
+    [WARP_WIDTH - 1, WARP_HEIGHT - 1],
+    [0, WARP_HEIGHT - 1],
+])
+
+perspective_matrix = cv2.getPerspectiveTransform(
+    source_points, destination_points
+)
 
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 parameters = cv2.aruco.DetectorParameters()
@@ -31,12 +53,9 @@ robots = {
     5: "Robot 5",
     6: "Robot 6",
     7: "Robot 7",
-    8: "Robot 8",
-    41: "Top Left",
-    42: "Top Right",
-    43: "Bottom Left",
-    44: "Bottom Right"
+    8: "Robot 8"
 }
+
 try:
     while True:
         ret, frame = camera.read()
@@ -44,14 +63,19 @@ try:
             print("Could not read from webcam")
             break
 
-        grid = frame.copy()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners, ids, rejected = detector.detectMarkers(gray)
+
+        grid = cv2.warpPerspective(frame, perspective_matrix, (WARP_WIDTH, WARP_HEIGHT))
+        grid_width = WARP_WIDTH
+        grid_height = WARP_HEIGHT
 
         if ids is not None:
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
             for marker_id, marker_corners in zip(ids.flatten(), corners):
+                marker_id = int(marker_id)
+
                 half = MARKER_LENGTH / 2
                 object_points = np.array([
                     [-half,  half, 0],
@@ -82,22 +106,28 @@ try:
                 )
                 camera_yaw = -yaw_degrees
 
-                # Find marker center and grid cell (1–10)
+                #Finds marker center and grid cell (1–10)
                 points = marker_corners.reshape(4, 2)
-                center_x = int(points[:, 0].mean())
-                center_y = int(points[:, 1].mean())
-                column = min(center_x * 10 // frame_width + 1, 10)
-                row = min(center_y * 10 // frame_height + 1, 10)
+                center_x = float(points[:, 0].mean())
+                center_y = float(points[:, 1].mean())
 
-                robot_name = robots.get(int(marker_id), "Unknown robot")
+                robot_name = robots.get(marker_id, "Unknown robot")
+
+                center = np.array([[[center_x, center_y]]], dtype=np.float32)
+                warped_x, warped_y = cv2.perspectiveTransform(
+                    center, perspective_matrix)[0, 0]
+
+                column = min(int(warped_x * 12 / WARP_WIDTH) + 1, 12)
+                row = min(int(warped_y * 12 / WARP_HEIGHT) + 1, 12)
+
                 print(robot_name, "позиция:", column, row, "угол:", camera_yaw)
 
-        # Draw 10×10 grid
-        for i in range(1, 10):
-            x = frame_width * i // 10
-            y = frame_height * i // 10
-            cv2.line(grid, (x, 0), (x, frame_height), (0, 0, 255), 1)
-            cv2.line(grid, (0, y), (frame_width, y), (0, 0, 255), 1)
+        #Draws 12×12 grid
+        for i in range(1, 12):
+            x = grid_width * i // 12
+            y = grid_height * i // 12
+            cv2.line(grid, (x, 0), (x, grid_height), (0, 0, 255), 1)
+            cv2.line(grid, (0, y), (grid_width, y), (0, 0, 255), 1)
 
         cv2.imshow("Webcam", frame)
         cv2.imshow("Grid", grid)
