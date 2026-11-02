@@ -41,6 +41,8 @@ perspective_matrix = cv2.getPerspectiveTransform(
     source_points, destination_points
 )
 
+inverse_perspective_matrix = np.linalg.inv(perspective_matrix)
+
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 parameters = cv2.aruco.DetectorParameters()
 detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
@@ -99,7 +101,7 @@ try:
 
                 cv2.drawFrameAxes(frame, camera_matrix, dist_coeffs, rvec, tvec, 0.05)
 
-                # Calculate yaw
+                #Calculates yaw
                 rotation_matrix, _ = cv2.Rodrigues(rvec)
                 yaw_degrees = np.degrees(
                     np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
@@ -124,10 +126,37 @@ try:
 
         #Draws 12×12 grid
         for i in range(1, 12):
-            x = grid_width * i // 12
-            y = grid_height * i // 12
-            cv2.line(grid, (x, 0), (x, grid_height), (0, 0, 255), 1)
-            cv2.line(grid, (0, y), (grid_width, y), (0, 0, 255), 1)
+            x = WARP_WIDTH * i // 12
+            y = WARP_HEIGHT * i // 12
+
+            # Grid lines in the top-down view
+            cv2.line(grid, (x, 0), (x, WARP_HEIGHT - 1), (0, 0, 255), 1)
+            cv2.line(grid, (0, y), (WARP_WIDTH - 1, y), (0, 0, 255), 1)
+
+            # Map those line endpoints back onto the camera view
+            vertical = np.array([[[x, 0], [x, WARP_HEIGHT - 1]]], dtype=np.float32)
+            vertical_camera = cv2.perspectiveTransform(
+                vertical, inverse_perspective_matrix
+            )[0]
+            cv2.line(
+                frame,
+                tuple(np.rint(vertical_camera[0]).astype(int)),
+                tuple(np.rint(vertical_camera[1]).astype(int)),
+                (0, 0, 255),
+                1,
+            )
+
+            horizontal = np.array([[[0, y], [WARP_WIDTH - 1, y]]], dtype=np.float32)
+            horizontal_camera = cv2.perspectiveTransform(
+                horizontal, inverse_perspective_matrix
+            )[0]
+            cv2.line(
+                frame,
+                tuple(np.rint(horizontal_camera[0]).astype(int)),
+                tuple(np.rint(horizontal_camera[1]).astype(int)),
+                (0, 0, 255),
+                1,
+            )
 
         cv2.imshow("Webcam", frame)
         cv2.imshow("Grid", grid)
