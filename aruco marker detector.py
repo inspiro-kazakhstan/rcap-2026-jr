@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import playsound3 as sound
 
 # Open the default webcam
 camera = cv2.VideoCapture(0)
@@ -67,6 +68,7 @@ try:
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners, ids, rejected = detector.detectMarkers(gray)
+        positions = {}
 
         grid = cv2.warpPerspective(frame, perspective_matrix, (WARP_WIDTH, WARP_HEIGHT))
         grid_width = WARP_WIDTH
@@ -121,8 +123,20 @@ try:
 
                 column = min(int(warped_x * 12 / WARP_WIDTH) + 1, 12)
                 row = min(int(warped_y * 12 / WARP_HEIGHT) + 1, 12)
+                positions[marker_id] = (column, row)
 
                 print(robot_name, "позиция:", column, row, "угол:", camera_yaw)
+
+                if (positions.get(1) == (12, 4) and 
+                positions.get(2) == (9, 1) and
+                positions.get(3) == (4, 1) and
+                positions.get(4) == (1, 4) and
+                positions.get(5) == (1, 9) and
+                positions.get(6) == (4, 12) and
+                positions.get(7) == (9, 12) and
+                positions.get(8) == (12, 9)):
+                    sound.playsound("wow.mp3")
+                    
 
         #Draws 12×12 grid
         for i in range(1, 12):
