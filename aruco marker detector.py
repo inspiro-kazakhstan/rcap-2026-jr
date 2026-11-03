@@ -127,14 +127,37 @@ try:
 
                 print(robot_name, "позиция:", column, row, "угол:", camera_yaw)
 
-                if (positions.get(1) == (12, 4) and 
-                positions.get(2) == (9, 1) and
-                positions.get(3) == (4, 1) and
-                positions.get(4) == (1, 4) and
-                positions.get(5) == (1, 9) and
-                positions.get(6) == (4, 12) and
-                positions.get(7) == (9, 12) and
-                positions.get(8) == (12, 9)):
+                #Pyramid
+                if (positions.get(1) == (2, 9) and
+                positions.get(2) == (3, 7) and
+                positions.get(3) == (4, 5) and
+                positions.get(4) == (5, 3) and 
+                positions.get(5) == (8, 3) and 
+                positions.get(6) == (9, 5) and 
+                positions.get(7) == (10, 7) and 
+                positions.get(8) == (11, 9)):
+                    sound.playsound("wow.mp3")
+
+                #Heart
+                if (positions.get(1) == (7, 12) and 
+                positions.get(2) == (4, 9) and
+                positions.get(3) == (1, 4) and
+                positions.get(4) == (4, 1) and
+                positions.get(5) == (10, 1) and
+                positions.get(6) == (12, 4) and
+                positions.get(7) == (10, 9) and
+                positions.get(8) == (7, 3)):
+                    sound.playsound("wow.mp3")
+                
+                #Sun
+                if (positions.get(1) == (4, 12) and 
+                positions.get(2) == (1, 9) and
+                positions.get(3) == (1, 4) and
+                positions.get(4) == (4, 1) and
+                positions.get(5) == (9, 1) and
+                positions.get(6) == (12, 4) and
+                positions.get(7) == (12, 9) and
+                positions.get(8) == (9, 12)):
                     sound.playsound("wow.mp3")
                     
 
