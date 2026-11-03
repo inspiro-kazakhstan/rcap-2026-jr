@@ -159,7 +159,40 @@ try:
                 positions.get(7) == (12, 9) and
                 positions.get(8) == (9, 12)):
                     sound.playsound("wow.mp3")
-                    
+
+                #Butterfly
+                if (positions.get(1) == (6, 11) and 
+                positions.get(2) == (3, 9) and
+                positions.get(3) == (3, 5) and
+                positions.get(4) == (1, 3) and
+                positions.get(5) == (12, 3) and
+                positions.get(6) == (10, 5) and
+                positions.get(7) == (10, 9) and
+                positions.get(8) == (6, 6)):
+                    sound.playsound("wow.mp3")
+
+                #Bird
+                if (positions.get(1) == (6, 12) and 
+                positions.get(2) == (4, 8) and
+                positions.get(3) == (2, 6) and
+                positions.get(4) == (1, 4) and
+                positions.get(5) == (12, 4) and
+                positions.get(6) == (10, 6) and
+                positions.get(7) == (8, 8) and
+                positions.get(8) == (6, 9)):
+                    sound.playsound("wow.mp3")
+
+                #Diamond
+                if (positions.get(1) == (6, 12) and 
+                positions.get(2) == (3, 9) and
+                positions.get(3) == (1, 6) and
+                positions.get(4) == (3, 3) and
+                positions.get(5) == (6, 1) and
+                positions.get(6) == (9, 3) and
+                positions.get(7) == (11, 6) and
+                positions.get(8) == (9, 9)):
+                    sound.playsound("wow.mp3")
+                
 
         #Draws 12×12 grid
         for i in range(1, 12):
