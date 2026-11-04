@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
 import playsound3 as sound
+import time
 
-# Open the default webcam
+#Opens the webcam
 camera = cv2.VideoCapture(0)
 
 if not camera.isOpened():
@@ -76,6 +77,7 @@ try:
                     continue
 
                 cv2.drawFrameAxes(frame, camera_matrix, dist_coeffs, rvec, tvec, 0.05)
+                cv2.drawFrameAxes(grid, camera_matrix, dist_coeffs, rvec, tvec, 0.05)
 
                 #Calculates yaw
                 rotation_matrix, _ = cv2.Rodrigues(rvec)
@@ -88,12 +90,10 @@ try:
                 points = marker_corners.reshape(4, 2)
                 center_x = float(points[:, 0].mean())
                 center_y = float(points[:, 1].mean())
-                column = min(center_x * 10 // frame_width + 1, 10)
-                row = min(center_y * 10 // frame_height + 1, 10)
+                column = int(min(center_x * 10 // frame_width + 1, 10))
+                row = int(min(center_y * 10 // frame_height + 1, 10))
 
                 robot_name = robots.get(marker_id, "Unknown robot")
-
-                print(robot_name, "позиция:", column, row, "угол:", camera_yaw)
 
                 #Pyramid
                 if (positions.get(1) == (2, 9) and
@@ -160,6 +160,9 @@ try:
                 positions.get(7) == (11, 6) and
                 positions.get(8) == (9, 9)):
                     sound.playsound("wow.mp3")
+
+                print(robot_name, "позиция:", column, row, "угол:", camera_yaw)
+                time.sleep(0.2)
                 
 
         #Draws 12×12 grid
