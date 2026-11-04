@@ -18,31 +18,7 @@ camera_matrix = np.array([
     [0, 800, frame_height / 2],
     [0, 0, 1]
 ], dtype=np.float32)
-
 dist_coeffs = np.zeros((5, 1), dtype=np.float32)
-
-WARP_WIDTH = 800
-WARP_HEIGHT = 800
-
-source_points = np.float32([
-    [120, 80],   # top-left
-    [540, 110],  # top-right
-    [610, 420],  # bottom-right
-    [70, 390],   # bottom-left
-])
-
-destination_points = np.float32([
-    [0, 0],
-    [WARP_WIDTH - 1, 0],
-    [WARP_WIDTH - 1, WARP_HEIGHT - 1],
-    [0, WARP_HEIGHT - 1],
-])
-
-perspective_matrix = cv2.getPerspectiveTransform(
-    source_points, destination_points
-)
-
-inverse_perspective_matrix = np.linalg.inv(perspective_matrix)
 
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 parameters = cv2.aruco.DetectorParameters()
@@ -70,9 +46,7 @@ try:
         corners, ids, rejected = detector.detectMarkers(gray)
         positions = {}
 
-        grid = cv2.warpPerspective(frame, perspective_matrix, (WARP_WIDTH, WARP_HEIGHT))
-        grid_width = WARP_WIDTH
-        grid_height = WARP_HEIGHT
+        grid = frame.copy()
 
         if ids is not None:
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
@@ -108,22 +82,16 @@ try:
                 yaw_degrees = np.degrees(
                     np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
                 )
-                camera_yaw = -yaw_degrees
+                camera_yaw = yaw_degrees
 
                 #Finds marker center and grid cell (1–10)
                 points = marker_corners.reshape(4, 2)
                 center_x = float(points[:, 0].mean())
                 center_y = float(points[:, 1].mean())
+                column = min(center_x * 10 // frame_width + 1, 10)
+                row = min(center_y * 10 // frame_height + 1, 10)
 
                 robot_name = robots.get(marker_id, "Unknown robot")
-
-                center = np.array([[[center_x, center_y]]], dtype=np.float32)
-                warped_x, warped_y = cv2.perspectiveTransform(
-                    center, perspective_matrix)[0, 0]
-
-                column = min(int(warped_x * 12 / WARP_WIDTH) + 1, 12)
-                row = min(int(warped_y * 12 / WARP_HEIGHT) + 1, 12)
-                positions[marker_id] = (column, row)
 
                 print(robot_name, "позиция:", column, row, "угол:", camera_yaw)
 
@@ -195,38 +163,11 @@ try:
                 
 
         #Draws 12×12 grid
-        for i in range(1, 12):
-            x = WARP_WIDTH * i // 12
-            y = WARP_HEIGHT * i // 12
-
-            # Grid lines in the top-down view
-            cv2.line(grid, (x, 0), (x, WARP_HEIGHT - 1), (0, 0, 255), 1)
-            cv2.line(grid, (0, y), (WARP_WIDTH - 1, y), (0, 0, 255), 1)
-
-            # Map those line endpoints back onto the camera view
-            vertical = np.array([[[x, 0], [x, WARP_HEIGHT - 1]]], dtype=np.float32)
-            vertical_camera = cv2.perspectiveTransform(
-                vertical, inverse_perspective_matrix
-            )[0]
-            cv2.line(
-                frame,
-                tuple(np.rint(vertical_camera[0]).astype(int)),
-                tuple(np.rint(vertical_camera[1]).astype(int)),
-                (0, 0, 255),
-                1,
-            )
-
-            horizontal = np.array([[[0, y], [WARP_WIDTH - 1, y]]], dtype=np.float32)
-            horizontal_camera = cv2.perspectiveTransform(
-                horizontal, inverse_perspective_matrix
-            )[0]
-            cv2.line(
-                frame,
-                tuple(np.rint(horizontal_camera[0]).astype(int)),
-                tuple(np.rint(horizontal_camera[1]).astype(int)),
-                (0, 0, 255),
-                1,
-            )
+        for i in range(1, 10):
+            x = frame_width * i // 10
+            y = frame_height * i // 10
+            cv2.line(grid, (x, 0), (x, frame_height), (0, 0, 255), 1)
+            cv2.line(grid, (0, y), (frame_width, y), (0, 0, 255), 1)
 
         cv2.imshow("Webcam", frame)
         cv2.imshow("Grid", grid)
