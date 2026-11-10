@@ -19,7 +19,12 @@ from bleak import BleakClient, BleakScanner
 CAMERA_INDEX = 1
 MAX_CAMERAS = 4
 ARUCO_DICT = cv2.aruco.DICT_6X6_250
+
 HEADING_OFFSET = 0.0
+
+HEADING_OFFSET = 0.0  # adjust by 90, 180, or -90 if marker top is not robot front
+
+# marker ID: {Bluetooth hub name, pixel target (x, y)}
 
 ROBOTS = {
     7: {"hub": "7", "target": (154, 98)},
@@ -59,6 +64,7 @@ def get_pose(marker_id):
 def open_camera(index):
     if sys.platform == "win32":
         return cv2.VideoCapture(index, cv2.CAP_DSHOW)
+    return cv2.VideoCapture(index)
 
 
 def run_camera():
