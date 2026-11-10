@@ -27,14 +27,14 @@ HEADING_OFFSET = 0.0  # adjust by 90, 180, or -90 if marker top is not robot fro
 # marker ID: {Bluetooth hub name, pixel target (x, y)}
 
 ROBOTS = {
-    1: {"hub": "1", "target": ()},
-    2: {"hub": "inspiro 2", "target": ()},
-    3: {"hub": "3", "target": ()},
-    4: {"hub": "4", "target": ()},
-    5: {"hub": "5", "target": ()},
-    6: {"hub": "6", "target": ()},
-    7: {"hub": "7", "target": (154, 98)},
-    8: {"hub": "8", "target": (460, 174)},
+    1: {"hub": "1", "target": (273, 105)},
+    2: {"hub": "inspiro 2", "target": (359, 94)},
+    3: {"hub": "3", "target": (180, 177)},
+    4: {"hub": "4", "target": (442, 150)},
+    5: {"hub": "5", "target": (116, 269)},
+    6: {"hub": "6", "target": (520, 217)},
+    7: {"hub": "7", "target": (47, 363)},
+    8: {"hub": "8", "target": (598, 328)},
 }
 
 UART = "c5f50002-8280-46da-89f4-6d8051e4aeef"
