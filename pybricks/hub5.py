@@ -9,7 +9,7 @@ from uselect import poll
  
 LEFT_PORT = Port.E
 RIGHT_PORT = Port.F
-MOTORS_REVERSED = False
+MOTORS_REVERSED = True
 WHEEL_DIAMETER = 56
 AXLE_TRACK = 112
 TURN_SIGN = 1
@@ -21,12 +21,12 @@ MAX_SPEED = 200       # максимальная скорость (мм/с)
 MAX_TURN_RATE = 200   # максимальная скорость поворота (град/с)
  
 # ПИД выравнивания (угол): выход в град/с
-KP_TURN = 1.8
+KP_TURN = 1.5
 KI_TURN = 0.3
 KD_TURN = 0.1
 I_MAX_TURN = 30       # предел интегральной части (град/с)
 I_ZONE = 30           # интеграл копится только если ошибка угла меньше этого (градусы)
-delta_angle = 3       # мёртвая зона по углу (градусы)
+delta_angle = 10       # мёртвая зона по углу (градусы)
  
 # ПИД движения прямо (расстояние до цели в пикселях): выход в мм/с
 KP_SPEED = 1.2

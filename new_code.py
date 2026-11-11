@@ -24,18 +24,28 @@ HEADING_OFFSET = 0.0
 
 HEADING_OFFSET = 0.0  # adjust by 90, 180, or -90 if marker top is not robot front
 
-# marker ID: {Bluetooth hub name, pixel target (x, y)}
+# marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
 
 ROBOTS = {
-    1: {"hub": "1", "target": (273, 105)},
-    2: {"hub": "inspiro 2", "target": (359, 94)},
-    3: {"hub": "3", "target": (180, 177)},
-    4: {"hub": "4", "target": (442, 150)},
-    5: {"hub": "5", "target": (116, 269)},
-    6: {"hub": "6", "target": (520, 217)},
-    7: {"hub": "7", "target": (47, 363)},
-    8: {"hub": "8", "target": (598, 328)},
+    1: {"hub": "1", "pyramid": (273, 105), "heart": (304, 417)},
+    2: {"hub": "inspiro 2", "pyramid": (359, 94), "heart": (312, 207)},
+    3: {"hub": "3", "pyramid": (180, 177), "heart": (208, 150)},
+    4: {"hub": "4", "pyramid": (442, 150), "heart": (416, 111)},
+    5: {"hub": "5", "pyramid": (116, 269), "heart": (168, 251)},
+    6: {"hub": "6", "pyramid": (520, 217), "heart": (442, 218)},
+    7: {"hub": "7", "pyramid": (47, 363), "heart": (216, 325)},
+    8: {"hub": "8", "pyramid": (598, 328), "heart": (388, 308)}
 }
+
+SHAPES = {
+    0: "pyramid",
+    1: "heart"
+}
+
+curr_shape = 0
+
+arrived = set()
+arrived_lock = threading.Lock()
 
 UART = "c5f50002-8280-46da-89f4-6d8051e4aeef"
 CHUNK = 19
@@ -66,6 +76,17 @@ def get_pose(marker_id):
             return None
         return dict(pose)
 
+def on_arrived(marker_id, msg):
+    global curr_shape
+
+    if "ARRIVED" not in msg:
+        return
+
+    with arrived_lock:
+        arrived.add(marker_id)
+        if len(arrived) == len(ROBOTS):
+            arrived.clear()
+            curr_shape = min(curr_shape + 1, len(SHAPES) - 1)
 
 def open_camera(index):
     if sys.platform == "win32":
@@ -109,6 +130,7 @@ def run_camera():
             if ids is not None:
                 cv2.aruco.drawDetectedMarkers(frame, corners, ids)
                 for raw_id, corner in zip(ids.flatten(), corners):
+                    global marker_id
                     marker_id = int(raw_id)
                     if marker_id not in ROBOTS:
                         continue
@@ -125,7 +147,7 @@ def run_camera():
 
             now = time.monotonic()
             for marker_id, config in ROBOTS.items():
-                tx, ty = config["target"]
+                tx, ty = config[SHAPES[curr_shape]]
                 cv2.circle(frame, (int(tx), int(ty)), 12, (0, 0, 255), 2)
                 cv2.putText(frame, str(marker_id), (int(tx) + 14, int(ty)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
@@ -157,6 +179,8 @@ def make_data_handler(marker_id):
         text = bytes(data[1:]).decode(errors="ignore")
         if "rdy" in text:
             ready_events[marker_id].set()
+        if "ARRIVED" in text:
+            on_arrived(marker_id, text)
         for line in text.splitlines():
             line = line.strip()
             if line and line != "rdy":
@@ -189,7 +213,7 @@ async def control_robot(marker_id, config):
             while not stop_event.is_set():
                 pose = get_pose(marker_id)
                 if pose:
-                    tx, ty = config["target"]
+                    tx, ty = config[SHAPES[curr_shape]]
                     try:
                         await send(client, f"{pose['x']:.0f} {pose['y']:.0f} {pose['angle']:.0f}")
                         await send(client, f"{tx} {ty}")
