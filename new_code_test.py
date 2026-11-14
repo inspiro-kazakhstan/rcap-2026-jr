@@ -24,24 +24,26 @@ HEADING_OFFSET = 180.0  # маркер показывает направлени
 # marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
 
 ROBOTS = {
-    1: {"hub": "1", "pyramid": (273, 105), "heart1": (308, 415), "heart2": (308, 415)},
-    2: {"hub": "inspiro 2", "pyramid": (359, 94), "heart1": (308, 105), "heart2": (308, 170)},
-    3: {"hub": "3", "pyramid": (180, 177), "heart1": (141, 144), "heart2": (141, 144)},
-    4: {"hub": "4", "pyramid": (442, 177), "heart1": (497, 131), "heart2": (497, 131)},
-    5: {"hub": "5", "pyramid": (116, 269), "heart1": (142, 232), "heart2": (142, 232)},
-    6: {"hub": "6", "pyramid": (520, 250), "heart1": (488, 226), "heart2": (488, 226)},
-    7: {"hub": "7", "pyramid": (80, 363), "heart1": (195, 309), "heart2": (195, 309)},
-    8: {"hub": "8", "pyramid": (540, 328), "heart1": (422, 297), "heart2": (422, 297)}
+    1: {"hub": "1", "pyramid": (273, 105), "heart1": (308, 415), "heart2": (308, 415), "diamond": (327, 398), "bird": (327, 396), "tulip": (330, 428)},
+    2: {"hub": "inspiro 2", "pyramid": (359, 94), "heart1": (308, 105), "heart2": (308, 170), "diamond": (321, 70), "bird": (143, 143), "tulip": (92, 124)},
+    3: {"hub": "3", "pyramid": (180, 177), "heart1": (141, 144), "heart2": (141, 144), "diamond": (224, 127), "bird": (184, 196), "tulip": (173, 202)},
+    4: {"hub": "4", "pyramid": (442, 177), "heart1": (497, 131), "heart2": (497, 131), "diamond": (406, 116), "bird": (502, 120), "tulip": (514, 98)},
+    5: {"hub": "5", "pyramid": (116, 269), "heart1": (142, 232), "heart2": (142, 232), "diamond": (158, 205), "bird": (243, 250), "tulip": (156, 341)},
+    6: {"hub": "6", "pyramid": (520, 250), "heart1": (488, 226), "heart2": (488, 226), "diamond": (488, 176), "bird": (461, 176), "tulip": (445, 180)},
+    7: {"hub": "7", "pyramid": (80, 363), "heart1": (195, 309), "heart2": (195, 309), "diamond": (206, 300), "bird": (328, 305), "tulip": (306, 246)},
+    8: {"hub": "8", "pyramid": (540, 328), "heart1": (422, 297), "heart2": (422, 297), "diamond": (442, 292), "bird": (410, 240), "tulip": (476, 314)}
 }
 
 SHAPES = {
     0: "pyramid",
     1: "heart1",
-    2: "heart2"
-    #2: "test"
+    2: "heart2",
+    3: "diamond",
+    4: "bird",
+    5: "tulip"
 }
 
-curr_shape = 0
+curr_shape = 5
 
 arrived = set()
 arrived_lock = threading.Lock()
@@ -247,10 +249,10 @@ def run_ble():
 
 
 if __name__ == "__main__":
-    ble_thread = threading.Thread(target=run_ble, daemon=True)
-    ble_thread.start()
+    #ble_thread = threading.Thread(target=run_ble, daemon=True)
+    #ble_thread.start()
     try:
         run_camera()
     finally:
         stop_event.set()
-        ble_thread.join(timeout=5)
+        #ble_thread.join(timeout=5)
