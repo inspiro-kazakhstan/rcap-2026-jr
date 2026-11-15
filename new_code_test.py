@@ -44,6 +44,7 @@ SHAPES = {
 }
 
 curr_shape = 5
+shape = SHAPES[curr_shape]
 
 arrived = set()
 arrived_lock = threading.Lock()
@@ -77,17 +78,23 @@ def get_pose(marker_id):
             return None
         return dict(pose)
 
-def on_arrived(marker_id, msg):
+def on_arrived(marker_id, arr_msg):
     global curr_shape
 
-    if "ARRIVED" not in msg:
+    if "ARRIVED" not in arr_msg:
         return
 
     with arrived_lock:
         arrived.add(marker_id)
         if len(arrived) == len(ROBOTS):
+
             arrived.clear()
             curr_shape = min(curr_shape + 1, len(SHAPES) - 1)
+
+def on_lights(rdy_msg):
+    if "lights rdy" in rdy_msg:
+        lights_on = True
+        return lights_on
 
 def open_camera(index):
     if sys.platform == "win32":
@@ -182,6 +189,7 @@ def make_data_handler(marker_id):
             ready_events[marker_id].set()
         if "ARRIVED" in text:
             on_arrived(marker_id, text)
+            on_lights(text)
         for line in text.splitlines():
             line = line.strip()
             if line and line != "rdy":
@@ -218,6 +226,9 @@ async def control_robot(marker_id, config):
                     try:
                         await send(client, f"{pose['x']:.0f} {pose['y']:.0f} {pose['angle']:.0f}")
                         await send(client, f"{tx} {ty}")
+                        await send(client, f"{shape}")
+                        if on_lights == True:
+                            await send(client, "LIGHTS")
                         failures = 0
                     except Exception as exc:
                         failures += 1
