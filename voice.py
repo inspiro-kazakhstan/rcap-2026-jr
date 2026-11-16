@@ -4,7 +4,7 @@ import queue
 import sounddevice as sd
 from vosk import Model, KaldiRecognizer
 
-MODEL_PATH = r"vosk-model-en-us-0.22"
+MODEL_PATH = r"C:\Users\tolik\Documents\vosk-model-en-us-0.22"
 SAMPLE_RATE = 16000
 
 audio_queue = queue.Queue()

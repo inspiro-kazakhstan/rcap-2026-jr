@@ -1,5 +1,5 @@
 from pybricks.hubs import PrimeHub
-from pybricks.pupdevices import Motor
+from pybricks.pupdevices import Motor, DCMotor
 from pybricks.parameters import Port, Direction
 from pybricks.tools import wait, StopWatch
 from umath import atan2, sqrt, degrees
@@ -8,6 +8,7 @@ from uselect import poll
  
 LEFT_PORT = Port.A
 RIGHT_PORT = Port.B
+LIGHT_PORT = Port.F
 MOTORS_REVERSED = False
 WHEEL_DIAMETER = 56
 AXLE_TRACK = 112
@@ -16,7 +17,7 @@ TURN_SIGN = 1
 TOLERANCE = 15        # допуск попадания в цель, в пикселях кадра
 WATCHDOG_MS = 500     # нет данных от компьютера дольше этого времени: стоп
  
-FORWARD_SPEED = -150   # скорость движения (мм/с)
+FORWARD_SPEED = -250   # скорость движения (мм/с)
 TURN_SPEED = 60       # скорость поворота корпуса (град/с)
 TURN_ENTER_ANGLE = 15
 TURN_EXIT_ANGLE = 12
@@ -27,6 +28,7 @@ PI = 3.14159
 hub = PrimeHub()
 left = Motor(LEFT_PORT, Direction.CLOCKWISE if MOTORS_REVERSED else Direction.COUNTERCLOCKWISE)
 right = Motor(RIGHT_PORT, Direction.COUNTERCLOCKWISE if MOTORS_REVERSED else Direction.CLOCKWISE)
+light = DCMotor(LIGHT_PORT)
  
 keyboard = poll()
 keyboard.register(stdin)
@@ -45,6 +47,8 @@ turn_direction = 1
 buffer = ""
 watchdog = StopWatch()
 
+shape = None
+
 def normalize_angle(angle):
     return (angle + 180) % 360 - 180
  
@@ -54,7 +58,52 @@ def clamp(value, low, high):
     if value > high:
         return high
     return value
- 
+
+def turn_on_lights(shape):
+    if "pyramid" in shape:
+        light.dc(100)
+        wait(2000)
+
+        light.stop()
+        wait(1000)
+    
+    elif "heart1" in shape:
+        light.dc(100)
+        wait(500)
+        light.stop()
+        wait(500)
+
+    elif "heart2" in shape:
+        for i in range(4):
+            light.dc(-100)
+            wait(500)
+
+            light.stop()
+            wait(500)
+
+    elif "diamond" in shape:
+        light.dc(100)
+        wait(2000)
+
+        light.stop()
+        wait(1000)
+
+    elif "bird" in shape:
+        for i in range(2):
+            light.dc(100)
+            wait(2000)
+
+            light.stop()
+            wait(1000)
+    
+    elif "tulip" in shape:
+        light.dc(-100)
+        wait(2000)
+
+        light.stop()
+        wait(1000)
+    
+    print("lights rdy")
  
 print("rdy")
  
@@ -75,8 +124,16 @@ while True:
                     new_pose = True
                     watchdog.reset()
                 elif len(parts) == 2:
-                    target_x = float(parts[0]) - 2
-                    target_y = float(parts[1]) - 2
+                    target_x = float(parts[0])
+                    target_y = float(parts[1])
+                elif len(parts) == 1:
+                    if "LIGHTS" in parts[0]:
+                        turn_on_lights(shape)
+                    else:
+                        new_shape = str(parts[0])
+                        if new_shape != shape:
+                            shape = new_shape
+                            at_target = False
             except ValueError:
                 pass
         else:
@@ -128,7 +185,7 @@ while True:
         turn_deg_s = TURN_SIGN * turn_direction * turn_magnitude
     else:
         speed_mm_s = FORWARD_SPEED
-        turn_deg_s = clamp(KP_HEADING * error, -MAX_CORRECTION, MAX_CORRECTION)
+        turn_deg_s = TURN_SIGN * clamp(KP_HEADING * error, -MAX_CORRECTION, MAX_CORRECTION)
     
     omega = turn_deg_s * PI / 180
     left_mm_s = speed_mm_s + omega * AXLE_TRACK / 2

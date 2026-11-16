@@ -11,6 +11,7 @@ import asyncio
 import math
 import threading
 import time
+import playsound3 as sound
 from contextlib import suppress
 
 import cv2
@@ -24,14 +25,14 @@ HEADING_OFFSET = 180.0  # маркер показывает направлени
 # marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
 
 ROBOTS = {
-    1: {"hub": "1", "pyramid": (273, 105), "heart1": (308, 415), "heart2": (308, 415), "diamond": (327, 398), "bird": (327, 396), "tulip": (330, 428)},
-    2: {"hub": "inspiro 2", "pyramid": (359, 94), "heart1": (308, 105), "heart2": (308, 170), "diamond": (321, 70), "bird": (143, 143), "tulip": (92, 124)},
-    3: {"hub": "3", "pyramid": (180, 177), "heart1": (141, 144), "heart2": (141, 144), "diamond": (224, 127), "bird": (184, 196), "tulip": (173, 202)},
-    4: {"hub": "4", "pyramid": (442, 177), "heart1": (497, 131), "heart2": (497, 131), "diamond": (406, 116), "bird": (502, 120), "tulip": (514, 98)},
-    5: {"hub": "5", "pyramid": (116, 269), "heart1": (142, 232), "heart2": (142, 232), "diamond": (158, 205), "bird": (243, 250), "tulip": (156, 341)},
-    6: {"hub": "6", "pyramid": (520, 250), "heart1": (488, 226), "heart2": (488, 226), "diamond": (488, 176), "bird": (461, 176), "tulip": (445, 180)},
-    7: {"hub": "7", "pyramid": (80, 363), "heart1": (195, 309), "heart2": (195, 309), "diamond": (206, 300), "bird": (328, 305), "tulip": (306, 246)},
-    8: {"hub": "8", "pyramid": (540, 328), "heart1": (422, 297), "heart2": (422, 297), "diamond": (442, 292), "bird": (410, 240), "tulip": (476, 314)}
+    #1: {"hub": "1", "pyramid": (273, 105), "heart1": (308, 415), "heart2": (308, 415), "diamond": (327, 398), "bird": (327, 396), "tulip": (330, 428)},
+    2: {"hub": "inspiro 2", "pyramid": (359, 94), "heart1": (308, 105), "heart2": (308, 85), "diamond": (321, 70), "bird": (143, 143), "tulip": (92, 124)},
+    #3: {"hub": "3", "pyramid": (180, 177), "heart1": (141, 144), "heart2": (141, 144), "diamond": (224, 127), "bird": (184, 196), "tulip": (173, 202)},
+    #4: {"hub": "4", "pyramid": (442, 145), "heart1": (497, 131), "heart2": (497, 131), "diamond": (406, 116), "bird": (502, 120), "tulip": (514, 98)},
+    #5: {"hub": "5", "pyramid": (116, 269), "heart1": (142, 232), "heart2": (142, 232), "diamond": (158, 205), "bird": (243, 250), "tulip": (156, 341)},
+    #6: {"hub": "6", "pyramid": (520, 221), "heart1": (488, 226), "heart2": (488, 226), "diamond": (488, 176), "bird": (461, 176), "tulip": (445, 180)},
+    #7: {"hub": "7", "pyramid": (80, 363), "heart1": (195, 309), "heart2": (195, 309), "diamond": (206, 300), "bird": (328, 305), "tulip": (306, 246)},
+    #8: {"hub": "8", "pyramid": (540, 328), "heart1": (422, 297), "heart2": (422, 297), "diamond": (442, 292), "bird": (410, 240), "tulip": (476, 314)}
 }
 
 SHAPES = {
@@ -43,17 +44,20 @@ SHAPES = {
     5: "tulip"
 }
 
-curr_shape = 5
-shape = SHAPES[curr_shape]
+lights_pending = set()
+lights_running = set()
+lights_done = set()
+arrived_for_shape = set()
+lights_lock = threading.Lock()
 
-arrived = set()
-arrived_lock = threading.Lock()
+curr_shape = 0
 
 UART = "c5f50002-8280-46da-89f4-6d8051e4aeef"
 CHUNK = 19
 SEND_EVERY = 0.01
 SEEN_MAX_AGE = 0.2
 PRINT_EVERY = 1.0  # None disables position logging
+AUDIO_PATH = "C:/Users/tolik/Documents/GitHub/rcap-2026-jr/audio/wow.mp3"
 
 stop_event = threading.Event()
 pose_lock = threading.Lock()
@@ -79,22 +83,14 @@ def get_pose(marker_id):
         return dict(pose)
 
 def on_arrived(marker_id, arr_msg):
-    global curr_shape
-
     if "ARRIVED" not in arr_msg:
         return
 
-    with arrived_lock:
-        arrived.add(marker_id)
-        if len(arrived) == len(ROBOTS):
+    with lights_lock:
+        arrived_for_shape.add(marker_id)
+        if len(arrived_for_shape) == len(ROBOTS):
+            lights_pending.update(ROBOTS.keys())
 
-            arrived.clear()
-            curr_shape = min(curr_shape + 1, len(SHAPES) - 1)
-
-def on_lights(rdy_msg):
-    if "lights rdy" in rdy_msg:
-        lights_on = True
-        return lights_on
 
 def open_camera(index):
     if sys.platform == "win32":
@@ -184,12 +180,21 @@ def make_data_handler(marker_id):
     def on_data(_, data):
         if not data or data[0] != 0x01:
             return
+        global curr_shape
         text = bytes(data[1:]).decode(errors="ignore")
         if "rdy" in text:
             ready_events[marker_id].set()
         if "ARRIVED" in text:
             on_arrived(marker_id, text)
-            on_lights(text)
+        if "lights rdy" in text:
+            with lights_lock:
+                lights_done.add(marker_id)
+                if len(lights_done) == len(ROBOTS):
+                    sound.playsound(AUDIO_PATH)
+                    lights_done.clear()
+                    lights_running.clear()
+                    arrived_for_shape.clear()
+                    curr_shape = min(curr_shape + 1, len(SHAPES) - 1)
         for line in text.splitlines():
             line = line.strip()
             if line and line != "rdy":
@@ -220,24 +225,39 @@ async def control_robot(marker_id, config):
         failures = 0
         try:
             while not stop_event.is_set():
-                pose = get_pose(marker_id)
-                if pose:
-                    tx, ty = config[SHAPES[curr_shape]]
-                    try:
+                with lights_lock:
+                    is_running_lights = marker_id in lights_running
+                    should_run_lights = marker_id in lights_pending
+
+                if is_running_lights:
+                    await asyncio.sleep(SEND_EVERY)
+                    continue
+
+                try:
+                    if should_run_lights:
+                        await send(client, "LIGHTS")
+                        with lights_lock:
+                            lights_pending.discard(marker_id)
+                            lights_running.add(marker_id)
+                        failures = 0
+                        await asyncio.sleep(SEND_EVERY)
+                        continue
+
+                    pose = get_pose(marker_id)
+                    if pose:
+                        tx, ty = config[SHAPES[curr_shape]]
                         await send(client, f"{pose['x']:.0f} {pose['y']:.0f} {pose['angle']:.0f}")
                         await send(client, f"{tx} {ty}")
-                        await send(client, f"{shape}")
-                        if on_lights == True:
-                            await send(client, "LIGHTS")
-                        failures = 0
-                    except Exception as exc:
-                        failures += 1
-                        print(f"Хаб {hub_name}: ошибка отправки ({failures}/5): {type(exc).__name__}: {exc}")
-                        if failures >= 5:
-                            print(f"Хаб {hub_name} не принимает данные; перезапусти программу на хабе.")
-                            break
-                        await asyncio.sleep(0.5)
-                        continue
+                        await send(client, f"{SHAPES[curr_shape]}")
+                    failures = 0
+                except Exception as exc:
+                    failures += 1
+                    print(f"Хаб {hub_name}: ошибка отправки ({failures}/5): {type(exc).__name__}: {exc}")
+                    if failures >= 5:
+                        print(f"Хаб {hub_name} не принимает данные; перезапусти программу на хабе.")
+                        break
+                    await asyncio.sleep(0.5)
+                    continue
                 await asyncio.sleep(SEND_EVERY)
         finally:
             with suppress(Exception):
@@ -260,10 +280,10 @@ def run_ble():
 
 
 if __name__ == "__main__":
-    #ble_thread = threading.Thread(target=run_ble, daemon=True)
-    #ble_thread.start()
+    ble_thread = threading.Thread(target=run_ble, daemon=True)
+    ble_thread.start()
     try:
         run_camera()
     finally:
         stop_event.set()
-        #ble_thread.join(timeout=5)
+        ble_thread.join(timeout=5)
