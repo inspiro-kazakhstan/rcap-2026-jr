@@ -48,6 +48,7 @@ lights_pending = set()
 lights_running = set()
 lights_done = set()
 arrived_for_shape = set()
+intro_done = set()
 lights_lock = threading.Lock()
 
 curr_shape = 0
@@ -232,6 +233,8 @@ async def control_robot(marker_id, config):
                 if is_running_lights:
                     await asyncio.sleep(SEND_EVERY)
                     continue
+                if intro_done != len(ROBOTS):
+                    await send(client, "INTRO")
 
                 try:
                     if should_run_lights:

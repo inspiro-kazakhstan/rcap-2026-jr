@@ -8,7 +8,7 @@ from uselect import poll
  
 LEFT_PORT = Port.A
 RIGHT_PORT = Port.B
-LIGHT_PORT = Port.D
+LIGHT_PORT = Port.F
 MOTORS_REVERSED = True
 WHEEL_DIAMETER = 56
 AXLE_TRACK = 112
@@ -16,6 +16,8 @@ TURN_SIGN = -1
  
 TOLERANCE = 15        # допуск попадания в цель, в пикселях кадра
 WATCHDOG_MS = 500     # нет данных от компьютера дольше этого времени: стоп
+
+INTRO_SPEED = 350
  
 FORWARD_SPEED = 250   # скорость движения (мм/с)
 TURN_SPEED = 60       # скорость поворота корпуса (град/с)
@@ -59,6 +61,10 @@ def clamp(value, low, high):
         return high
     return value
 
+def intro():
+    left.run(INTRO_SPEED)
+    right.run(INTRO_SPEED)
+
 def turn_on_lights(shape):
     if "pyramid" in shape:
         light.dc(100)
@@ -67,11 +73,6 @@ def turn_on_lights(shape):
         light.stop()
         wait(1000)
     
-    elif "heart1" in shape:
-        light.dc(100)
-        wait(500)
-        light.stop()
-        wait(500)
 
     elif "heart2" in shape:
         for i in range(4):
@@ -106,7 +107,7 @@ def turn_on_lights(shape):
     print("lights rdy")
  
 print("rdy")
- 
+
 while True:
     while keyboard.poll(0):
         char = str(stdin.buffer.read(1), "utf-8")
