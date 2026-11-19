@@ -8,7 +8,7 @@
   
   <b><i>Yaroslav Rabotyagov</i>, software engineer</b>
   
-  <b><i>Anatoliy Yakhonto</i>, software engineer</b>
+  <b><i>Anatoliy Yakhontov</i>, software engineer</b>
   
   <b><i>Alexander Nenartavichus</i>, constructor</b>
   
