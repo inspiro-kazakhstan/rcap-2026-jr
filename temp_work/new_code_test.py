@@ -12,7 +12,9 @@ import math
 import threading
 import time
 import playsound3 as sound
+#from voice import listen_for_start
 from contextlib import suppress
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 from bleak import BleakClient, BleakScanner
@@ -31,8 +33,8 @@ ROBOTS = {
     4: {"hub": "4", "intro": (545, 161), "pyramid": (454, 144), "heart1": (552, 140), "heart2": (552, 140), "diamond": (490, 190)},
     5: {"hub": "5", "intro": (99, 256), "pyramid": (164, 248), "heart1": (164, 248), "heart2": (164, 248), "diamond": (230, 280)},
     6: {"hub": "6", "intro": (566, 275), "pyramid": (498, 272), "heart1": (498, 272), "heart2": (484, 272), "diamond": (419, 280)},
-    7: {"hub": "7", "intro": (109, 400), "pyramid": (109, 400), "heart1": (343, 371), "heart2": (343, 371), "diamond": (331, 384)},
-    8: {"hub": "8", "intro": (554, 400), "pyramid": (554, 400), "heart1": (333, 136), "heart2": (333, 136), "diamond": (335, 36)}
+    7: {"hub": "7", "intro": (109, 400), "pyramid": (109, 400), "heart1": (109, 400), "heart2": (343, 371), "diamond": (331, 384)},
+    #8: {"hub": "8", "intro": (554, 400), "pyramid": (554, 400), "heart1": (333, 136), "heart2": (333, 136), "diamond": (335, 36)}
 }
 
 SHAPES = {
@@ -193,7 +195,7 @@ def make_data_handler(marker_id):
             with lights_lock:
                 lights_done.add(marker_id)
                 if len(lights_done) == len(ROBOTS):
-                    if curr_shape != 0 or curr_shape != 2:
+                    if curr_shape != 0 and curr_shape != 2:
                         sound.playsound(WOW_PATH)
                     lights_done.clear()
                     lights_running.clear()
@@ -241,10 +243,11 @@ async def control_robot(marker_id, config):
 
                 try:
                     if should_run_lights:
-                        await send(client, "LIGHTS")
                         with lights_lock:
                             lights_pending.discard(marker_id)
                             lights_running.add(marker_id)
+
+                        await send(client, "LIGHTS")
                         failures = 0
                         await asyncio.sleep(SEND_EVERY)
                         continue
@@ -288,16 +291,19 @@ def run_ble():
 
 
 if __name__ == "__main__":
-    music_thread = threading.Thread(target=play_music, daemon=True)
-    music_thread.start()
+    #music_thread = threading.Thread(target=play_music, daemon=True)
+    #music_thread.start()
 
-    time.sleep(4)
+    #time.sleep(4)
+
+    #result = listen_for_start()
 
     ble_thread = threading.Thread(target=run_ble, daemon=True)
     ble_thread.start()
 
     time.sleep(1)
 
+    #if "is open" in result:
     try:
         run_camera()
     finally:
