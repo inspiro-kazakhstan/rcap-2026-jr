@@ -14,5 +14,6 @@
   
   <b><i>David Kim</i>, constructor</b>
 
-  
+  Here's our team's Technical Poster that will be presented to the judges:
+  [Download User Manual](manual.pdf)
 </body>
