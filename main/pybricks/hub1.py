@@ -6,18 +6,18 @@ from umath import atan2, sqrt, degrees
 from usys import stdin
 from uselect import poll
  
-LEFT_PORT = Port.F
-RIGHT_PORT = Port.C
-LIGHT_PORT = Port.E
-MOTORS_REVERSED = True
+LEFT_PORT = Port.A
+RIGHT_PORT = Port.B
+LIGHT_PORT = Port.F
+MOTORS_REVERSED = False
 WHEEL_DIAMETER = 56
 AXLE_TRACK = 112
 TURN_SIGN = 1
  
 TOLERANCE = 15        # допуск попадания в цель, в пикселях кадра
 WATCHDOG_MS = 500     # нет данных от компьютера дольше этого времени: стоп
- 
-FORWARD_SPEED = -250   # скорость движения (мм/с)
+
+FORWARD_SPEED = 260  # скорость движения (мм/с)
 TURN_SPEED = 60       # скорость поворота корпуса (град/с)
 TURN_ENTER_ANGLE = 15
 TURN_EXIT_ANGLE = 12
@@ -43,6 +43,7 @@ new_pose = False
 at_target = False
 aligning = False
 turn_direction = 1
+intro_mode = "on"
  
 buffer = ""
 watchdog = StopWatch()
@@ -59,6 +60,11 @@ def clamp(value, low, high):
         return high
     return value
 
+def intro():
+    if intro_mode == "on":
+        left.run(FORWARD_SPEED)
+        right.run(FORWARD_SPEED)
+
 def turn_on_lights(shape):
     if "pyramid" in shape:
         light.dc(-100)
@@ -66,12 +72,6 @@ def turn_on_lights(shape):
 
         light.stop()
         wait(1000)
-
-    elif "heart1" in shape:
-        light.dc(-100)
-        wait(500)
-        light.stop()
-        wait(500)
 
     elif "heart2" in shape:
         for i in range(4):
@@ -117,6 +117,7 @@ while True:
  
             try:
                 if len(parts) == 3:
+                    intro_mode = "off"
                     curr_x = (float(parts[0]))
                     curr_y = float(parts[1])
                     curr_angle = float(parts[2])
@@ -124,12 +125,17 @@ while True:
                     new_pose = True
                     watchdog.reset()
                 elif len(parts) == 2:
+                    intro_mode = "off"
                     target_x = float(parts[0])
                     target_y = float(parts[1])
                 elif len(parts) == 1:
                     if "LIGHTS" in parts[0]:
+                        intro_mode = "off"
                         turn_on_lights(shape)
+                    elif "INTRO" in parts[0]:
+                        intro()
                     else:
+                        intro_mode = "off"
                         new_shape = str(parts[0])
                         if new_shape != shape:
                             shape = new_shape
@@ -138,14 +144,15 @@ while True:
                 pass
         else:
             buffer += char
- 
-    if watchdog.time() > WATCHDOG_MS or not have_pose or target_x is None:
-        left.stop()
-        right.stop()
-        new_pose = False
-        aligning = False
-        wait(10)
-        continue
+
+    if intro_mode == "off":
+        if watchdog.time() > WATCHDOG_MS or not have_pose or target_x is None:
+            left.stop()
+            right.stop()
+            new_pose = False
+            aligning = False
+            wait(10)
+            continue
  
     if not new_pose:
         wait(10)
@@ -185,10 +192,7 @@ while True:
         turn_deg_s = TURN_SIGN * turn_direction * turn_magnitude
     else:
         speed_mm_s = FORWARD_SPEED
-        if abs(error) <= TURN_ENTER_ANGLE:
-            turn_deg_s = 0
-        else:
-            turn_deg_s = TURN_SIGN * clamp(KP_HEADING * error, -MAX_CORRECTION, MAX_CORRECTION)
+        turn_deg_s = TURN_SIGN * clamp(KP_HEADING * error, -MAX_CORRECTION, MAX_CORRECTION)
     
     omega = turn_deg_s * PI / 180
     left_mm_s = speed_mm_s + omega * AXLE_TRACK / 2

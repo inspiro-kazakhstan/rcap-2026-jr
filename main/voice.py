@@ -19,7 +19,7 @@ recognizer = KaldiRecognizer(model, SAMPLE_RATE)
 
 print("Слушаю...")
 
-try:
+def listen_for_start():
     with sd.RawInputStream(
         samplerate=SAMPLE_RATE,
         blocksize=8000,
@@ -30,17 +30,13 @@ try:
         while True:
             audio = audio_queue.get()
 
-            if recognizer.AcceptWaveform(audio):
-                result = json.loads(recognizer.Result())
-                if result.get("text"):
-                    print("Итог:", result["text"])
-            else:
-                partial = json.loads(recognizer.PartialResult())
-                if partial.get("partial"):
-                    print("Пока услышано:", partial["partial"])
+            if not recognizer.AcceptWaveform(audio):
+                continue
 
-except KeyboardInterrupt:
-    final_result = json.loads(recognizer.FinalResult())
-    if final_result.get("text"):
-        print("Итог:", final_result["text"])
-    print("\nStopped.")
+            result = json.loads(recognizer.Result())
+            text = result.get("text", "")
+            if text:
+                print("Итог:", text)
+
+            if "is open" in text:
+                return text

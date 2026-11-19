@@ -12,7 +12,9 @@ import math
 import threading
 import time
 import playsound3 as sound
+from voice import listen_for_start
 from contextlib import suppress
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 from bleak import BleakClient, BleakScanner
@@ -25,30 +27,28 @@ HEADING_OFFSET = 180.0  # маркер показывает направлени
 # marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
 
 ROBOTS = {
-    #1: {"hub": "1", "pyramid": (273, 105), "heart1": (308, 415), "heart2": (308, 415), "diamond": (327, 398), "bird": (327, 396), "tulip": (330, 428)},
-    2: {"hub": "inspiro 2", "pyramid": (359, 94), "heart1": (308, 105), "heart2": (308, 85), "diamond": (321, 70), "bird": (143, 143), "tulip": (92, 124)},
-    #3: {"hub": "3", "pyramid": (180, 177), "heart1": (141, 144), "heart2": (141, 144), "diamond": (224, 127), "bird": (184, 196), "tulip": (173, 202)},
-    #4: {"hub": "4", "pyramid": (442, 145), "heart1": (497, 131), "heart2": (497, 131), "diamond": (406, 116), "bird": (502, 120), "tulip": (514, 98)},
-    #5: {"hub": "5", "pyramid": (116, 269), "heart1": (142, 232), "heart2": (142, 232), "diamond": (158, 205), "bird": (243, 250), "tulip": (156, 341)},
-    #6: {"hub": "6", "pyramid": (520, 221), "heart1": (488, 226), "heart2": (488, 226), "diamond": (488, 176), "bird": (461, 176), "tulip": (445, 180)},
-    #7: {"hub": "7", "pyramid": (80, 363), "heart1": (195, 309), "heart2": (195, 309), "diamond": (206, 300), "bird": (328, 305), "tulip": (306, 246)},
-    #8: {"hub": "8", "pyramid": (540, 328), "heart1": (422, 297), "heart2": (422, 297), "diamond": (442, 292), "bird": (410, 240), "tulip": (476, 314)}
+    1: {"hub": "1", "intro": (127, 69), "pyramid": (288, 72), "heart1": (250, 58), "heart2": (250, 58), "diamond": (243, 97)},
+    2: {"hub": "inspiro 2", "intro": (542, 69), "pyramid": (377, 70), "heart1": (409, 63), "heart2": (409, 63), "diamond": (417, 103)},
+    3: {"hub": "3", "intro": (103, 144), "pyramid": (215, 140), "heart1": (96, 130), "heart2": (96, 130), "diamond": (158, 174)},
+    4: {"hub": "4", "intro": (545, 161), "pyramid": (454, 144), "heart1": (552, 140), "heart2": (552, 140), "diamond": (490, 190)},
+    5: {"hub": "5", "intro": (99, 256), "pyramid": (164, 248), "heart1": (164, 248), "heart2": (164, 248), "diamond": (230, 280)},
+    6: {"hub": "6", "intro": (566, 275), "pyramid": (498, 272), "heart1": (498, 272), "heart2": (484, 272), "diamond": (419, 280)},
+    7: {"hub": "7", "intro": (109, 400), "pyramid": (109, 400), "heart1": (109, 400), "heart2": (343, 371), "diamond": (331, 384)},
+    8: {"hub": "8", "intro": (554, 400), "pyramid": (554, 400), "heart1": (333, 136), "heart2": (333, 136), "diamond": (335, 36)}
 }
 
 SHAPES = {
-    0: "pyramid",
-    1: "heart1",
-    2: "heart2",
-    3: "diamond",
-    4: "bird",
-    5: "tulip"
+    0: "intro",
+    1: "pyramid",
+    2: "heart1",
+    3: "heart2",
+    4: "diamond"
 }
 
 lights_pending = set()
 lights_running = set()
 lights_done = set()
 arrived_for_shape = set()
-intro_done = set()
 lights_lock = threading.Lock()
 
 curr_shape = 0
@@ -58,16 +58,19 @@ CHUNK = 19
 SEND_EVERY = 0.01
 SEEN_MAX_AGE = 0.2
 PRINT_EVERY = 1.0  # None disables position logging
-AUDIO_PATH = "C:/Users/tolik/Documents/GitHub/rcap-2026-jr/audio/wow.mp3"
+WOW_PATH = "C:/Users/tolik/Documents/GitHub/rcap-2026-jr/audio/wow.mp3"
+WAKA_WAKA_PATH = "C:/Users/tolik/Documents/Github/rcap-2026-jr/audio/waka waka.mp3"
 
 stop_event = threading.Event()
 pose_lock = threading.Lock()
 poses = {}  # marker ID -> {x, y, angle, t}
 
+def play_music():
+    if not stop_event.is_set():
+        sound.playsound(WAKA_WAKA_PATH)
 
 def wrap(angle):
     return (angle + 180) % 360 - 180
-
 
 def marker_pose(points):
     center = points.mean(axis=0)
@@ -96,7 +99,6 @@ def on_arrived(marker_id, arr_msg):
 def open_camera(index):
     if sys.platform == "win32":
         return cv2.VideoCapture(index, cv2.CAP_DSHOW)
-    return cv2.VideoCapture(index)
 
 
 def run_camera():
@@ -119,6 +121,7 @@ def run_camera():
         cv2.aruco.getPredefinedDictionary(ARUCO_DICT),
         cv2.aruco.DetectorParameters(),
     )
+
     last_print = {}
     print("Камера работает. Q или Esc закрывают окно камеры.")
 
@@ -183,6 +186,7 @@ def make_data_handler(marker_id):
             return
         global curr_shape
         text = bytes(data[1:]).decode(errors="ignore")
+
         if "rdy" in text:
             ready_events[marker_id].set()
         if "ARRIVED" in text:
@@ -191,11 +195,13 @@ def make_data_handler(marker_id):
             with lights_lock:
                 lights_done.add(marker_id)
                 if len(lights_done) == len(ROBOTS):
-                    sound.playsound(AUDIO_PATH)
+                    if curr_shape != 0 and curr_shape != 2:
+                        sound.playsound(WOW_PATH)
                     lights_done.clear()
                     lights_running.clear()
                     arrived_for_shape.clear()
                     curr_shape = min(curr_shape + 1, len(SHAPES) - 1)
+
         for line in text.splitlines():
             line = line.strip()
             if line and line != "rdy":
@@ -223,6 +229,7 @@ async def control_robot(marker_id, config):
         await client.write_gatt_char(UART, b"\x01", response=True)
         await asyncio.wait_for(ready.wait(), 20)
         print(f"Хаб {hub_name} готов")
+        
         failures = 0
         try:
             while not stop_event.is_set():
@@ -233,15 +240,14 @@ async def control_robot(marker_id, config):
                 if is_running_lights:
                     await asyncio.sleep(SEND_EVERY)
                     continue
-                if intro_done != len(ROBOTS):
-                    await send(client, "INTRO")
 
                 try:
                     if should_run_lights:
-                        await send(client, "LIGHTS")
                         with lights_lock:
                             lights_pending.discard(marker_id)
                             lights_running.add(marker_id)
+
+                        await send(client, "LIGHTS")
                         failures = 0
                         await asyncio.sleep(SEND_EVERY)
                         continue
@@ -252,6 +258,8 @@ async def control_robot(marker_id, config):
                         await send(client, f"{pose['x']:.0f} {pose['y']:.0f} {pose['angle']:.0f}")
                         await send(client, f"{tx} {ty}")
                         await send(client, f"{SHAPES[curr_shape]}")
+                    else:
+                        await send(client, "INTRO")
                     failures = 0
                 except Exception as exc:
                     failures += 1
@@ -283,10 +291,21 @@ def run_ble():
 
 
 if __name__ == "__main__":
+    music_thread = threading.Thread(target=play_music, daemon=True)
+    music_thread.start()
+
+    time.sleep(4)
+
+    result = listen_for_start()
+
     ble_thread = threading.Thread(target=run_ble, daemon=True)
     ble_thread.start()
-    try:
-        run_camera()
-    finally:
-        stop_event.set()
-        ble_thread.join(timeout=5)
+
+    time.sleep(1)
+
+    if "is open" in result:
+        try:
+            run_camera()
+        finally:
+            stop_event.set()
+            ble_thread.join(timeout=5)
