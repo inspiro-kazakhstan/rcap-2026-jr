@@ -15,5 +15,5 @@
   <b><i>David Kim</i>, constructor</b>
 
   Here's our team's Technical Poster that will be presented to the judges:
-  [Download User Manual](INSPIRO_JUNIORS_A1.pdf)
+  [Download User Manual](INSPIRO_JUNIORS_A1_poster.pdf)
 </body>
