@@ -21,6 +21,7 @@ print("Слушаю...")
 
 def listen_for_start():
     with sd.RawInputStream(
+        device=8,
         samplerate=SAMPLE_RATE,
         blocksize=8000,
         dtype="int16",
@@ -40,3 +41,5 @@ def listen_for_start():
 
             if "is open" in text:
                 return text
+
+listen_for_start()
