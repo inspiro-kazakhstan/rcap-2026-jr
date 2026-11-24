@@ -4,7 +4,7 @@ from pybricks.parameters import Port, Direction
 from pybricks.tools import wait, StopWatch
 from umath import atan2, sqrt, degrees
 from usys import stdin
-from uselect import poll
+from uselect import poll, POLLIN
  
 LEFT_PORT = Port.A
 RIGHT_PORT = Port.B
@@ -31,8 +31,9 @@ right = Motor(RIGHT_PORT, Direction.COUNTERCLOCKWISE if MOTORS_REVERSED else Dir
 light = DCMotor(LIGHT_PORT)
  
 keyboard = poll()
-keyboard.register(stdin)
- 
+keyboard.register(stdin, POLLIN)
+
+hub_name = hub.system.info()["name"]
 curr_x = 0.0
 curr_y = 0.0
 curr_angle = 0.0
@@ -44,7 +45,7 @@ at_target = False
 aligning = False
 turn_direction = 1
 intro_mode = "on"
- 
+
 buffer = ""
 watchdog = StopWatch()
 
@@ -104,8 +105,29 @@ def turn_on_lights(shape):
         wait(1000)
     
     print("lights rdy")
- 
-print("rdy")
+
+if hub_name == "4" or hub_name == "6" or hub_name == "8":
+    light.dc(100)
+    wait(500)
+    light.stop()
+elif hub_name == "inspiro 2" or hub_name == "1" or hub_name == "3" or hub_name == "5" or hub_name == "7":
+    light.dc(-100)
+    wait(500)
+    light.stop()
+
+while not hub.system.info()["host_connected_ble"]:
+    wait(6)
+
+if hub_name == "4" or hub_name == "6" or hub_name == "8":
+    light.dc(100)
+    wait(500)
+    light.stop()
+    print("rdy")
+elif hub_name == "inspiro 2" or hub_name == "1" or hub_name == "3" or hub_name == "5" or hub_name == "7":
+    light.dc(-100)
+    wait(500)
+    light.stop()
+    print("rdy")
  
 while True:
     while keyboard.poll(0):

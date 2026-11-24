@@ -33,9 +33,12 @@ ROBOTS = {
     4: {"hub": "4", "intro": (545, 161), "pyramid": (454, 144), "heart1": (552, 140), "heart2": (552, 140), "diamond": (490, 190)},
     5: {"hub": "5", "intro": (99, 256), "pyramid": (164, 248), "heart1": (164, 248), "heart2": (164, 248), "diamond": (230, 280)},
     6: {"hub": "6", "intro": (566, 275), "pyramid": (498, 272), "heart1": (498, 272), "heart2": (484, 272), "diamond": (419, 280)},
-    7: {"hub": "7", "intro": (109, 400), "pyramid": (109, 400), "heart1": (109, 400), "heart2": (343, 371), "diamond": (331, 384)},
+    #7: {"hub": "7", "intro": (109, 400), "pyramid": (109, 400), "heart1": (109, 400), "heart2": (343, 371), "diamond": (331, 384)},
     8: {"hub": "8", "intro": (554, 400), "pyramid": (554, 400), "heart1": (333, 136), "heart2": (333, 136), "diamond": (335, 36)}
 }
+
+# Hub 7 still moves and must arrive, but its faulty light wiring is skipped.
+LIGHTS_ROBOTS = set(ROBOTS)
 
 SHAPES = {
     0: "intro",
@@ -93,7 +96,7 @@ def on_arrived(marker_id, arr_msg):
     with lights_lock:
         arrived_for_shape.add(marker_id)
         if len(arrived_for_shape) == len(ROBOTS):
-            lights_pending.update(ROBOTS.keys())
+            lights_pending.update(LIGHTS_ROBOTS)
 
 
 def open_camera(index):
@@ -193,8 +196,9 @@ def make_data_handler(marker_id):
             on_arrived(marker_id, text)
         if "lights rdy" in text:
             with lights_lock:
-                lights_done.add(marker_id)
-                if len(lights_done) == len(ROBOTS):
+                if marker_id in LIGHTS_ROBOTS:
+                    lights_done.add(marker_id)
+                if lights_done == LIGHTS_ROBOTS:
                     if curr_shape != 0 and curr_shape != 2:
                         sound.playsound(WOW_PATH)
                     lights_done.clear()
@@ -229,7 +233,7 @@ async def control_robot(marker_id, config):
         await client.write_gatt_char(UART, b"\x01", response=True)
         await asyncio.wait_for(ready.wait(), 20)
         print(f"Хаб {hub_name} готов")
-        
+
         failures = 0
         try:
             while not stop_event.is_set():
@@ -296,15 +300,13 @@ if __name__ == "__main__":
 
     time.sleep(4)
 
+    ble_thread = threading.Thread(target=run_ble, daemon=True)
+
     result = listen_for_start()
 
-    ble_thread = threading.Thread(target=run_ble, daemon=True)
-    ble_thread.start()
-
-    time.sleep(1)
-
-    if "is open" in result:
+    if "open" in result:
         try:
+            ble_thread.start()
             run_camera()
         finally:
             stop_event.set()
