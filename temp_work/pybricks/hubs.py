@@ -82,7 +82,7 @@ def turn_on_lights(shape):
         light.stop()
         wait(1000)
 
-    elif "heart3" in shape:
+    elif "heart2" in shape:
         for i in range(4):
             light.dc(-100)
             wait(500)

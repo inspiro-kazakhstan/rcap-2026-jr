@@ -32,17 +32,17 @@ HEADING_OFFSET = 180.0  # маркер показывает направлени
 # marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
 
 ROBOTS = {
-    1: {"hub": "1", "pyramid": (382, 357), "heart1": (432, 356), "heart2": (431, 354), "heart3": (431, 356), "diamond": (431, 356)},
-    2: {"hub": "inspiro 2", "pyramid": (248, 357), "heart1": (181, 356), "heart2": (181, 356), "heart3": (181, 356), "diamond": (181, 356)},
-    3: {"hub": "3", "pyramid": (437, 258), "heart1": (520, 254), "heart2": (520, 254), "heart3": (520, 254),"diamond": (520, 254)},
-    4: {"hub": "4", "pyramid": (191, 258), "heart1": (103, 254), "heart2": (103, 254), "heart3": (102, 272), "diamond": (103, 272)},
-    5: {"hub": "5", "pyramid": (478, 182), "heart1": (431, 182), "heart2": (431, 182), "heart3": (431, 182), "diamond": (431, 182)},
-    6: {"hub": "6", "pyramid": (165, 182), "heart1": (202, 182), "heart2": (202, 182), "heart3": (202, 182), "diamond": (202, 182)},
-    7: {"hub": "7", "pyramid": (511, 102), "heart1": (510, 102), "heart2": (510, 102), "heart3": (318, 114), "diamond": (318, 114)},
-    8: {"hub": "8", "pyramid": (125, 102), "heart1": (304, 102), "heart2": (313, 287), "heart3": (313, 308), "diamond": (321, 374)}
+    1: {"hub": "1", "pyramid": (288, 72), "heart1": (250, 58), "heart2": (250, 58), "heart3": (250, 58), "diamond": (243, 97)},
+    2: {"hub": "inspiro 2", "pyramid": (377, 70), "heart1": (409, 63), "heart2": (409, 63), "heart3": (409, 63), "diamond": (417, 103)},
+    3: {"hub": "3", "pyramid": (215, 140), "heart1": (96, 130), "heart2": (96, 130), "heart3": (96, 130),"diamond": (158, 174)},
+    4: {"hub": "4", "pyramid": (454, 144), "heart1": (552, 140), "heart2": (552, 140), "heart3": (552, 140), "diamond": (490, 190)},
+    5: {"hub": "5", "pyramid": (164, 248), "heart1": (164, 248), "heart2": (164, 248), "heart3": (164, 248), "diamond": (230, 280)},
+    6: {"hub": "6", "pyramid": (498, 272), "heart1": (498, 272), "heart2": (484, 272), "heart3": (484, 272), "diamond": (419, 280)},
+    7: {"hub": "7", "pyramid": (109, 356), "heart1": (109, 356), "heart2": (109, 356), "heart3": (343, 371), "diamond": (331, 384)},
+    8: {"hub": "8", "pyramid": (554, 356), "heart1": (333, 356), "heart2": (333, 136), "heart3": (333, 136), "diamond": (335, 36)}
 }
 
-
+# Hub 7 still moves and must arrive, but its faulty light wiring is skipped.
 LIGHTS_ROBOTS = set(ROBOTS)
 
 SHAPES = {
@@ -129,15 +129,8 @@ def on_arrived(marker_id, arr_msg):
             lights_pending.update(LIGHTS_ROBOTS)
             send_serial_signal(b'3')
             send_serial_signal(b'5')
-            threading.Timer(3.0, send_serial_signal, args=(b'4',)).start()
-            threading.Timer(3.0, send_serial_signal, args=(b'6',)).start()
-
-def voice_worker():
-    while not start_signal.is_set():
-        result = listen_for_start()
-        if result and "open" in result.lower():
-            start_signal.set()  # Signals the main thread immediately
-            break
+            threading.Timer(3.0, send_serial_signal, args=(b'4')).start()
+            threading.Timer(3.0, send_serial_signal, args=(b'6')).start()
 
 def open_camera(index):
     if sys.platform == "win32":
@@ -275,9 +268,6 @@ async def control_robot(marker_id, config):
         print(f"Хаб {hub_name} готов")
 
         failures = 0
-        ever_seen = False
-        search_attempts = 0
-        next_search_at = 0.0
         try:
             while not stop_event.is_set():
                 with lights_lock:
@@ -288,6 +278,10 @@ async def control_robot(marker_id, config):
                     await asyncio.sleep(SEND_EVERY)
                     continue
 
+                ever_seen = False
+                search_attempts = 0
+                next_search_at = 0.0
+                
                 try:
                     if should_run_lights:
                         with lights_lock:
@@ -329,6 +323,9 @@ async def control_robot(marker_id, config):
                             search_attempts += 1
                             next_search_at = now + SEARCH_RETRY_SECONDS
                     failures = 0
+                    ever_seen = False
+                    search_attempts = 0
+                    next_search_at = 0.0
                 except Exception as exc:
                     failures += 1
                     print(f"Хаб {hub_name}: ошибка отправки ({failures}/5): {type(exc).__name__}: {exc}")
@@ -359,24 +356,19 @@ def run_ble():
 
 
 if __name__ == "__main__":
-    start_signal = threading.Event()
-
     ble_thread = threading.Thread(target=run_ble, daemon=True)
 
-    voice_thread = threading.Thread(target=voice_worker, daemon=True)
-    voice_thread.start()
+    result = listen_for_start()
 
-    start_signal.wait(timeout=7.0)
-    start_signal.set()
+    if "open" in result:
+        try:
+            music_thread = threading.Thread(target=play_music, daemon=True)
+            music_thread.start()
+            send_serial_signal(b'1')
+            time.sleep(3)
 
-    try:
-        music_thread = threading.Thread(target=play_music, daemon=True)
-        music_thread.start()
-        send_serial_signal(b'1')
-        time.sleep(3)
-
-        ble_thread.start()
-        run_camera()
-    finally:
-        stop_event.set()
-        ble_thread.join(timeout=5)
+            ble_thread.start()
+            run_camera()
+        finally:
+            stop_event.set()
+            ble_thread.join(timeout=5)
