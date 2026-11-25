@@ -24,6 +24,11 @@ TURN_EXIT_ANGLE = 12
 KP_HEADING = 0.5      # небольшая P-коррекция курса во время движения
 MAX_CORRECTION = 20   # предел коррекции курса (град/с)
 PI = 3.14159
+
+SEARCH_MOTOR_SPEED = 140  # motor degrees/second
+SEARCH_BACK_MS = 350
+SEARCH_TURN_MS = 300
+SEARCH_FORWARD_MS = 650
  
 hub = PrimeHub()
 left = Motor(LEFT_PORT, Direction.CLOCKWISE if MOTORS_REVERSED else Direction.COUNTERCLOCKWISE)
@@ -45,6 +50,9 @@ at_target = False
 aligning = False
 turn_direction = 1
 intro_mode = "on"
+searching = False
+search_step = 0
+search_watch = StopWatch()
 
 buffer = ""
 watchdog = StopWatch()
@@ -108,11 +116,11 @@ def turn_on_lights(shape):
 
 if hub_name == "4" or hub_name == "6" or hub_name == "8":
     light.dc(100)
-    wait(500)
+    wait(3000)
     light.stop()
 elif hub_name == "inspiro 2" or hub_name == "1" or hub_name == "3" or hub_name == "5" or hub_name == "7":
     light.dc(-100)
-    wait(500)
+    wait(3000)
     light.stop()
 
 while not hub.system.info()["host_connected_ble"]:
@@ -120,12 +128,12 @@ while not hub.system.info()["host_connected_ble"]:
 
 if hub_name == "4" or hub_name == "6" or hub_name == "8":
     light.dc(100)
-    wait(500)
+    wait(3000)
     light.stop()
     print("rdy")
 elif hub_name == "inspiro 2" or hub_name == "1" or hub_name == "3" or hub_name == "5" or hub_name == "7":
     light.dc(-100)
-    wait(500)
+    wait(3000)
     light.stop()
     print("rdy")
  
@@ -139,8 +147,9 @@ while True:
  
             try:
                 if len(parts) == 3:
+                    searching = False
                     intro_mode = "off"
-                    curr_x = (float(parts[0]))
+                    curr_x = float(parts[0])
                     curr_y = float(parts[1])
                     curr_angle = float(parts[2])
                     have_pose = True
@@ -156,6 +165,11 @@ while True:
                         turn_on_lights(shape)
                     elif "INTRO" in parts[0]:
                         intro()
+                    elif "SEARCH" in parts[0]:
+                        intro_mode = "off"
+                        searching = True
+                        search_step = 0
+                        search_watch.reset()
                     else:
                         intro_mode = "off"
                         new_shape = str(parts[0])
@@ -166,6 +180,38 @@ while True:
                 pass
         else:
             buffer += char
+    
+    if searching:
+        elapsed = search_watch.time()
+
+        if search_step == 0:
+            left.run(-SEARCH_MOTOR_SPEED)
+            right.run(-SEARCH_MOTOR_SPEED)
+            if elapsed >= SEARCH_BACK_MS:
+                left.stop()
+                right.stop()
+                search_step = 1
+                search_watch.reset()
+
+        elif search_step == 1:
+            left.run(-SEARCH_MOTOR_SPEED)
+            right.run(SEARCH_MOTOR_SPEED)
+            if elapsed >= SEARCH_TURN_MS:
+                left.stop()
+                right.stop()
+                search_step = 2
+                search_watch.reset()
+
+        elif search_step == 2:
+            left.run(SEARCH_MOTOR_SPEED)
+            right.run(SEARCH_MOTOR_SPEED)
+            if elapsed >= SEARCH_FORWARD_MS:
+                left.stop()
+                right.stop()
+                searching = False
+
+        wait(10)
+        continue
 
     if intro_mode == "off":
         if watchdog.time() > WATCHDOG_MS or not have_pose or target_x is None:

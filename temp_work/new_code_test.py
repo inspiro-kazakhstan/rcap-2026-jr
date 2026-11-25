@@ -15,7 +15,6 @@ import playsound3 as sound
 import serial
 from voice import listen_for_start
 from contextlib import suppress
-from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 from bleak import BleakClient, BleakScanner
@@ -33,14 +32,14 @@ HEADING_OFFSET = 180.0  # маркер показывает направлени
 # marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
 
 ROBOTS = {
-    1: {"hub": "1", "intro": (127, 69), "pyramid": (288, 72), "heart1": (250, 58), "heart2": (250, 58), "diamond": (243, 97)},
-    2: {"hub": "inspiro 2", "intro": (542, 69), "pyramid": (377, 70), "heart1": (409, 63), "heart2": (409, 63), "diamond": (417, 103)},
-    3: {"hub": "3", "intro": (103, 144), "pyramid": (215, 140), "heart1": (96, 130), "heart2": (96, 130), "diamond": (158, 174)},
-    4: {"hub": "4", "intro": (545, 161), "pyramid": (454, 144), "heart1": (552, 140), "heart2": (552, 140), "diamond": (490, 190)},
-    5: {"hub": "5", "intro": (99, 256), "pyramid": (164, 248), "heart1": (164, 248), "heart2": (164, 248), "diamond": (230, 280)},
-    6: {"hub": "6", "intro": (566, 275), "pyramid": (498, 272), "heart1": (498, 272), "heart2": (484, 272), "diamond": (419, 280)},
-    #7: {"hub": "7", "intro": (109, 400), "pyramid": (109, 400), "heart1": (109, 400), "heart2": (343, 371), "diamond": (331, 384)},
-    8: {"hub": "8", "intro": (554, 400), "pyramid": (554, 400), "heart1": (333, 136), "heart2": (333, 136), "diamond": (335, 36)}
+    1: {"hub": "1", "pyramid": (288, 72), "heart1": (250, 58), "heart2": (250, 58), "heart3": (250, 58), "diamond": (243, 97)},
+    2: {"hub": "inspiro 2", "pyramid": (377, 70), "heart1": (409, 63), "heart2": (409, 63), "heart3": (409, 63), "diamond": (417, 103)},
+    3: {"hub": "3", "pyramid": (215, 140), "heart1": (96, 130), "heart2": (96, 130), "heart3": (96, 130),"diamond": (158, 174)},
+    4: {"hub": "4", "pyramid": (454, 144), "heart1": (552, 140), "heart2": (552, 140), "heart3": (552, 140), "diamond": (490, 190)},
+    5: {"hub": "5", "pyramid": (164, 248), "heart1": (164, 248), "heart2": (164, 248), "heart3": (164, 248), "diamond": (230, 280)},
+    6: {"hub": "6", "pyramid": (498, 272), "heart1": (498, 272), "heart2": (484, 272), "heart3": (484, 272), "diamond": (419, 280)},
+    7: {"hub": "7", "pyramid": (109, 356), "heart1": (109, 356), "heart2": (109, 356), "heart3": (343, 371), "diamond": (331, 384)},
+    8: {"hub": "8", "pyramid": (554, 356), "heart1": (333, 356), "heart2": (333, 136), "heart3": (333, 136), "diamond": (335, 36)}
 }
 
 # Hub 7 still moves and must arrive, but its faulty light wiring is skipped.
@@ -50,13 +49,15 @@ SHAPES = {
     0: "pyramid",
     1: "heart1",
     2: "heart2",
-    3: "diamond"
+    3: "heart3",
+    4: "diamond"
 }
 
 lights_pending = set()
 lights_running = set()
 lights_done = set()
 arrived_for_shape = set()
+ever_seen = set()
 lights_lock = threading.Lock()
 
 curr_shape = 0
@@ -68,6 +69,10 @@ SEEN_MAX_AGE = 0.2
 PRINT_EVERY = 1.0  # None disables position logging
 WOW_PATH = "C:/Users/tolik/Documents/GitHub/rcap-2026-jr/audio/wow.mp3"
 WAKA_WAKA_PATH = "C:/Users/tolik/Documents/Github/rcap-2026-jr/audio/waka waka.mp3"
+
+LOST_AFTER = 0.8
+SEARCH_RETRY_SECONDS = 2.5
+MAX_SEARCH_ATTEMPTS = 2
 
 stop_event = threading.Event()
 pose_lock = threading.Lock()
@@ -107,6 +112,13 @@ def get_pose(marker_id):
             return None
         return dict(pose)
 
+def get_pose_age(marker_id):
+    with pose_lock:
+        pose = poses.get(marker_id)
+        if pose is None:
+            return None
+        return time.monotonic() - pose["t"]
+
 def on_arrived(marker_id, arr_msg):
     if "ARRIVED" not in arr_msg:
         return
@@ -116,7 +128,9 @@ def on_arrived(marker_id, arr_msg):
         if len(arrived_for_shape) == len(ROBOTS):
             lights_pending.update(LIGHTS_ROBOTS)
             send_serial_signal(b'3')
+            send_serial_signal(b'5')
             threading.Timer(3.0, send_serial_signal, args=(b'4')).start()
+            threading.Timer(3.0, send_serial_signal, args=(b'6')).start()
 
 def open_camera(index):
     if sys.platform == "win32":
@@ -218,7 +232,7 @@ def make_data_handler(marker_id):
                 if marker_id in LIGHTS_ROBOTS:
                     lights_done.add(marker_id)
                 if lights_done == LIGHTS_ROBOTS:
-                    if curr_shape != 0 and curr_shape != 2:
+                    if curr_shape != 1 and curr_shape != 2:
                         sound.playsound(WOW_PATH)
                     lights_done.clear()
                     lights_running.clear()
@@ -264,6 +278,10 @@ async def control_robot(marker_id, config):
                     await asyncio.sleep(SEND_EVERY)
                     continue
 
+                ever_seen = False
+                search_attempts = 0
+                next_search_at = 0.0
+                
                 try:
                     if should_run_lights:
                         with lights_lock:
@@ -276,14 +294,38 @@ async def control_robot(marker_id, config):
                         continue
 
                     pose = get_pose(marker_id)
+
                     if pose:
+                        ever_seen = True
+                        search_attempts = 0
+                        next_search_at = 0.0
+
                         tx, ty = config[SHAPES[curr_shape]]
                         await send(client, f"{pose['x']:.0f} {pose['y']:.0f} {pose['angle']:.0f}")
                         await send(client, f"{tx} {ty}")
                         await send(client, f"{SHAPES[curr_shape]}")
-                    else:
+
+                    elif not ever_seen:
+                        # Keep the existing startup behavior until this robot is first seen.
                         await send(client, "INTRO")
+
+                    else:
+                        age = get_pose_age(marker_id)
+                        now = time.monotonic()
+
+                        if (
+                            age is not None
+                            and age >= LOST_AFTER
+                            and search_attempts < MAX_SEARCH_ATTEMPTS
+                            and now >= next_search_at
+                        ):
+                            await send(client, "SEARCH")
+                            search_attempts += 1
+                            next_search_at = now + SEARCH_RETRY_SECONDS
                     failures = 0
+                    ever_seen = False
+                    search_attempts = 0
+                    next_search_at = 0.0
                 except Exception as exc:
                     failures += 1
                     print(f"Хаб {hub_name}: ошибка отправки ({failures}/5): {type(exc).__name__}: {exc}")
