@@ -14,7 +14,7 @@ WHEEL_DIAMETER = 56
 AXLE_TRACK = 112
 TURN_SIGN = 1
  
-TOLERANCE = 15        # допуск попадания в цель, в пикселях кадра
+TOLERANCE = 20        # допуск попадания в цель, в пикселях кадра
 WATCHDOG_MS = 500     # нет данных от компьютера дольше этого времени: стоп
 
 FORWARD_SPEED = 260  # скорость движения (мм/с)
@@ -96,6 +96,12 @@ def turn_on_lights(shape):
 
         light.stop()
         wait(1000)
+    
+    elif "umbrella" in shape:
+        light.dc(-100)
+        wait(2000)
+        
+        light.stop()
 
     elif "bird" in shape:
         for i in range(2):
