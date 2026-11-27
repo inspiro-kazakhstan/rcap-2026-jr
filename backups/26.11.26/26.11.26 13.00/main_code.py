@@ -32,14 +32,14 @@ HEADING_OFFSET = 180.0  # маркер показывает направлени
 # marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
 
 ROBOTS = {
-    1: {"hub": "1", "pyramid": (382, 357), "heart1": (432, 356), "heart2": (431, 354), "heart3": (431, 356), "diamond": (431, 356), "umbrella": (436, 356), "bird": (508, 228), "tulip1": (527, 390), "tulip2": (527, 390)},
-    2: {"hub": "inspiro 2", "pyramid": (248, 357), "heart1": (181, 356), "heart2": (181, 356), "heart3": (181, 356), "diamond": (181, 356), "umbrella": (189, 359), "bird": (122, 264), "tulip1": (134, 414), "tulip2": (134, 414)},
-    3: {"hub": "3", "pyramid": (437, 258), "heart1": (520, 254), "heart2": (520, 254), "heart3": (520, 254),"diamond": (520, 254), "umbrella": (570, 166), "bird": (570, 166), "tulip1": (574, 173), "tulip2": (504, 245)},
-    4: {"hub": "4", "pyramid": (191, 258), "heart1": (103, 254), "heart2": (103, 254), "heart3": (102, 272), "diamond": (103, 272), "umbrella": (40, 192), "bird": (40, 192), "tulip1": (39, 188), "tulip2": (151, 298)},
-    5: {"hub": "5", "pyramid": (478, 182), "heart1": (431, 182), "heart2": (431, 182), "heart3": (431, 182), "diamond": (431, 182), "umbrella": (431, 177), "bird": (431, 177), "tulip1": (428, 173), "tulip2": (429, 172)},
-    6: {"hub": "6", "pyramid": (165, 182), "heart1": (202, 182), "heart2": (202, 182), "heart3": (202, 182), "diamond": (202, 182), "umbrella": (200, 185), "bird": (200, 185), "tulip1": (213, 170), "tulip2": (213, 170)},
-    7: {"hub": "7", "pyramid": (511, 102), "heart1": (510, 102), "heart2": (510, 102), "heart3": (318, 114), "diamond": (318, 114), "umbrella": (302, 36), "bird": (302, 37), "tulip1": (313, 40), "tulip2": (313, 39)},
-    8: {"hub": "8", "pyramid": (125, 102), "heart1": (304, 102), "heart2": (313, 287), "heart3": (313, 308), "diamond": (321, 374), "umbrella": (318, 369), "bird": (304, 121), "tulip1": (322, 278), "tulip2": (322, 278)}
+    1: {"hub": "1", "pyramid": (382, 357), "heart1": (432, 356), "heart2": (431, 354), "heart3": (431, 356), "diamond": (431, 356), "umbrella": (436, 356), "bird": (508, 228), "tulip1": (527, 390), "tulip2": (527, 390), "outro1": (384, 404), "outro2": (384, 404)},
+    2: {"hub": "inspiro 2", "pyramid": (248, 391), "heart1": (181, 356), "heart2": (181, 356), "heart3": (181, 356), "diamond": (181, 356), "umbrella": (189, 359), "bird": (122, 264), "tulip1": (134, 414), "tulip2": (134, 414), "outro1": (210, 408), "outro2": (210, 408)},
+    3: {"hub": "3", "pyramid": (437, 258), "heart1": (520, 254), "heart2": (520, 254), "heart3": (520, 254),"diamond": (520, 254), "umbrella": (570, 166), "bird": (570, 166), "tulip1": (574, 173), "tulip2": (504, 245), "outro1": (504, 245), "outro2": (380, 283)},
+    4: {"hub": "4", "pyramid": (191, 258), "heart1": (103, 254), "heart2": (103, 254), "heart3": (102, 272), "diamond": (103, 272), "umbrella": (40, 192), "bird": (40, 192), "tulip1": (39, 188), "tulip2": (151, 298), "outro1": (151, 298), "outro2": (228, 282)},
+    5: {"hub": "5", "pyramid": (478, 155), "heart1": (431, 182), "heart2": (431, 182), "heart3": (431, 182), "diamond": (431, 182), "umbrella": (431, 177), "bird": (431, 177), "tulip1": (428, 173), "tulip2": (429, 172), "outro1": (429, 172), "outro2": (372, 164)},
+    6: {"hub": "6", "pyramid": (165, 155), "heart1": (202, 182), "heart2": (202, 182), "heart3": (202, 182), "diamond": (202, 182), "umbrella": (200, 185), "bird": (200, 185), "tulip1": (213, 170), "tulip2": (213, 170), "outro1": (213, 170), "outro2": (234, 171)},
+    7: {"hub": "7", "pyramid": (511, 93), "heart1": (510, 93), "heart2": (510, 102), "heart3": (318, 114), "diamond": (318, 114), "umbrella": (302, 36), "bird": (302, 67), "tulip1": (313, 70), "tulip2": (313, 69), "outro1": (364, 67) , "outro2": (364, 67)},
+    8: {"hub": "8", "pyramid": (125, 93), "heart1": (304, 102), "heart2": (313, 287), "heart3": (313, 308), "diamond": (321, 374), "umbrella": (318, 369), "bird": (304, 121), "tulip1": (322, 278), "tulip2": (322, 278), "outro1": (229, 80), "outro2": (229, 80)}
 }
 
 
@@ -54,7 +54,9 @@ SHAPES = {
     5: "umbrella",
     6: "bird",
     7: "tulip1",
-    8: "tulip2"
+    8: "tulip2",
+    9: "outro1",
+    10: "outro2"
 }
 
 lights_pending = set()
@@ -76,7 +78,7 @@ WAKA_WAKA_PATH = "C:/Users/tolik/Documents/Github/rcap-2026-jr/audio/waka waka.m
 
 LOST_AFTER = 0.8
 SEARCH_RETRY_SECONDS = 2.5
-MAX_SEARCH_ATTEMPTS = 2
+MAX_SEARCH_ATTEMPTS = 10
 
 stop_event = threading.Event()
 pose_lock = threading.Lock()
@@ -374,8 +376,8 @@ if __name__ == "__main__":
     start_signal.set()
 
     try:
-        music_thread = threading.Thread(target=play_music, daemon=True)
-        music_thread.start()
+        #music_thread = threading.Thread(target=play_music, daemon=True)
+        #music_thread.start()
         send_serial_signal(b'1')
         time.sleep(3)
 

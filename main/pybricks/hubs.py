@@ -111,7 +111,7 @@ def turn_on_lights(shape):
             light.stop()
             wait(1000)
     
-    elif "tulip" in shape:
+    elif "tulip2" in shape:
         light.dc(-100)
         wait(2000)
 

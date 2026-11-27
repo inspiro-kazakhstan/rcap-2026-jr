@@ -76,7 +76,7 @@ def intro():
 
 def turn_on_lights(shape):
     if "pyramid" in shape:
-        light.dc(-100)
+        light.dc(100)
         wait(2000)
 
         light.stop()
@@ -84,35 +84,35 @@ def turn_on_lights(shape):
 
     elif "heart3" in shape:
         for i in range(4):
-            light.dc(100)
+            light.dc(-100)
             wait(500)
 
             light.stop()
             wait(500)
 
     elif "diamond" in shape:
-        light.dc(-100)
+        light.dc(100)
         wait(2000)
 
         light.stop()
         wait(1000)
     
     elif "umbrella" in shape:
-        light.dc(100)
+        light.dc(-100)
         wait(2000)
         
         light.stop()
 
     elif "bird" in shape:
         for i in range(2):
-            light.dc(-100)
+            light.dc(100)
             wait(2000)
 
             light.stop()
             wait(1000)
     
-    elif "tulip" in shape:
-        light.dc(100)
+    elif "tulip2" in shape:
+        light.dc(-100)
         wait(2000)
 
         light.stop()
