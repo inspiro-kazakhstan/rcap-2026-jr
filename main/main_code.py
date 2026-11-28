@@ -28,21 +28,19 @@ SIGN_OFF = '2'
 SERVO1_ON = '3'
 SERVO1_OFF = '4'
 
-HEADING_OFFSET = 180.0  # маркер показывает направление, противоположное передней части робота
-# marker ID: {Bluetooth hub name, pixel pyramid (x, y)}
+HEADING_OFFSET = 180.0
 
 # Словарь со всеми роботами / Dictionary with all the robots
 ROBOTS = {
-    #1: {"hub": "1", "pyramid": (382, 357), "heart1": (432, 356), "heart2": (431, 354), "heart3": (431, 356), "diamond": (431, 356), "umbrella": (436, 356), "bird": (508, 228), "tulip1": (527, 390), "tulip2": (527, 390), "outro1": (384, 404), "outro2": (384, 404)},
-    #2: {"hub": "inspiro 2", "pyramid": (248, 391), "heart1": (181, 356), "heart2": (181, 356), "heart3": (181, 356), "diamond": (181, 356), "umbrella": (189, 359), "bird": (122, 264), "tulip1": (134, 414), "tulip2": (134, 414), "outro1": (210, 408), "outro2": (210, 408)},
+    1: {"hub": "1", "pyramid": (382, 391), "heart1": (432, 356), "heart2": (431, 354), "heart3": (431, 356), "diamond": (431, 356), "umbrella": (436, 356), "bird": (508, 228), "tulip1": (527, 390), "tulip2": (527, 390), "outro1": (384, 404), "outro2": (384, 404)},
+    2: {"hub": "inspiro 2", "pyramid": (248, 391), "heart1": (181, 356), "heart2": (181, 356), "heart3": (181, 356), "diamond": (181, 356), "umbrella": (189, 359), "bird": (122, 264), "tulip1": (134, 414), "tulip2": (134, 390), "outro1": (210, 408), "outro2": (210, 408)},
     3: {"hub": "3", "pyramid": (437, 258), "heart1": (520, 254), "heart2": (520, 254), "heart3": (520, 254),"diamond": (520, 254), "umbrella": (570, 166), "bird": (570, 166), "tulip1": (574, 173), "tulip2": (504, 245), "outro1": (504, 245), "outro2": (380, 283)},
-    #4: {"hub": "4", "pyramid": (191, 258), "heart1": (103, 254), "heart2": (103, 254), "heart3": (102, 272), "diamond": (103, 272), "umbrella": (40, 192), "bird": (40, 192), "tulip1": (39, 188), "tulip2": (151, 298), "outro1": (151, 298), "outro2": (228, 282)},
-    #5: {"hub": "5", "pyramid": (478, 155), "heart1": (431, 182), "heart2": (431, 182), "heart3": (431, 182), "diamond": (431, 182), "umbrella": (431, 177), "bird": (431, 177), "tulip1": (428, 173), "tulip2": (429, 172), "outro1": (429, 172), "outro2": (372, 164)},
-    #6: {"hub": "6", "pyramid": (165, 155), "heart1": (202, 182), "heart2": (202, 182), "heart3": (202, 182), "diamond": (202, 182), "umbrella": (200, 185), "bird": (200, 185), "tulip1": (213, 170), "tulip2": (213, 170), "outro1": (213, 170), "outro2": (234, 171)},
-    #7: {"hub": "7", "pyramid": (511, 93), "heart1": (510, 93), "heart2": (510, 102), "heart3": (318, 114), "diamond": (318, 114), "umbrella": (302, 36), "bird": (302, 67), "tulip1": (313, 70), "tulip2": (313, 69), "outro1": (364, 67) , "outro2": (364, 67)},
-    #8: {"hub": "8", "pyramid": (125, 93), "heart1": (304, 102), "heart2": (313, 287), "heart3": (313, 308), "diamond": (321, 374), "umbrella": (318, 369), "bird": (304, 121), "tulip1": (322, 278), "tulip2": (322, 278), "outro1": (229, 80), "outro2": (229, 80)}
+    4: {"hub": "4", "pyramid": (191, 258), "heart1": (103, 254), "heart2": (103, 254), "heart3": (102, 272), "diamond": (103, 272), "umbrella": (40, 192), "bird": (40, 192), "tulip1": (39, 188), "tulip2": (151, 298), "outro1": (151, 298), "outro2": (228, 282)},
+    5: {"hub": "5", "pyramid": (478, 155), "heart1": (431, 182), "heart2": (431, 182), "heart3": (431, 182), "diamond": (431, 182), "umbrella": (431, 177), "bird": (431, 177), "tulip1": (428, 173), "tulip2": (429, 172), "outro1": (429, 172), "outro2": (372, 164)},
+    6: {"hub": "6", "pyramid": (165, 155), "heart1": (202, 182), "heart2": (202, 182), "heart3": (202, 182), "diamond": (202, 182), "umbrella": (200, 185), "bird": (200, 185), "tulip1": (213, 170), "tulip2": (213, 170), "outro1": (213, 170), "outro2": (234, 171)},
+    7: {"hub": "7", "pyramid": (511, 77), "heart1": (510, 93), "heart2": (510, 102), "heart3": (318, 114), "diamond": (318, 114), "umbrella": (302, 54), "bird": (302, 67), "tulip1": (313, 70), "tulip2": (313, 69), "outro1": (364, 67) , "outro2": (364, 67)},
+    8: {"hub": "8", "pyramid": (125, 77), "heart1": (304, 93), "heart2": (313, 287), "heart3": (313, 308), "diamond": (321, 374), "umbrella": (318, 369), "bird": (304, 142), "tulip1": (322, 278), "tulip2": (322, 278), "outro1": (229, 80), "outro2": (229, 80)}
 }
-
 
 LIGHTS_ROBOTS = set(ROBOTS)
 
@@ -83,7 +81,7 @@ MAX_SEARCH_ATTEMPTS = 10
 
 stop_event = threading.Event()
 pose_lock = threading.Lock()
-poses = {}  # marker ID -> {x, y, angle, t}
+poses = {}
 
 #Инициализирует COM-порт / Initializes the COM port
 try:
@@ -143,7 +141,7 @@ def voice_worker():
     while not start_signal.is_set():
         result = listen_for_start()
         if result and "open" in result.lower():
-            start_signal.set()  # Signals the main thread immediately
+            start_signal.set()
             break
 
 def open_camera(index):
@@ -323,7 +321,6 @@ async def control_robot(marker_id, config):
                         await send(client, f"{SHAPES[curr_shape]}")
 
                     elif not ever_seen:
-                        # Keep the existing startup behavior until this robot is first seen.
                         await send(client, "INTRO")
 
                     else:
@@ -377,15 +374,11 @@ if __name__ == "__main__":
     voice_thread = threading.Thread(target=voice_worker, daemon=True)
     voice_thread.start()
 
-    start_signal.wait(timeout=7.0)
+    start_signal.wait(timeout=6.0)
     start_signal.set()
 
     try:
-        #music_thread = threading.Thread(target=play_music, daemon=True)
-        #music_thread.start()
         send_serial_signal(b'1')
-        time.sleep(3)
-
         ble_thread.start()
         run_camera()
     finally:

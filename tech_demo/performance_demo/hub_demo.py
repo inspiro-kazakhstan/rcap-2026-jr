@@ -14,15 +14,15 @@ WHEEL_DIAMETER = 56
 AXLE_TRACK = 112
 TURN_SIGN = 1
  
-TOLERANCE = 20        # допуск попадания в цель, в пикселях кадра
-WATCHDOG_MS = 500     # нет данных от компьютера дольше этого времени: стоп
+TOLERANCE = 20        
+WATCHDOG_MS = 500     
 
-FORWARD_SPEED = 260  # скорость движения (мм/с)
-TURN_SPEED = 60       # скорость поворота корпуса (град/с)
+FORWARD_SPEED = 260  
+TURN_SPEED = 60       
 TURN_ENTER_ANGLE = 15
 TURN_EXIT_ANGLE = 12
-KP_HEADING = 0.5      # небольшая P-коррекция курса во время движения
-MAX_CORRECTION = 20   # предел коррекции курса (град/с)
+KP_HEADING = 0.5      
+MAX_CORRECTION = 20   
 PI = 3.14159
 
 SEARCH_MOTOR_SPEED = 140  # motor degrees/second
@@ -254,7 +254,6 @@ while True:
     if aligning:
         speed_mm_s = 0
 
-        # Чем меньше ошибка, тем медленнее поворот
         turn_magnitude = min(TURN_SPEED, max(3, 1.5 * (abs(error) - TURN_EXIT_ANGLE)))
         turn_deg_s = TURN_SIGN * turn_direction * turn_magnitude
     else:
